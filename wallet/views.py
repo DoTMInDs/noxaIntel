@@ -284,8 +284,12 @@ def withdraw_request(request):
             messages.error(request, str(e))
 
         return redirect('wallet:overview')
+    
+    context = {
+        "wallet": wallet,
+    }
 
-    return render(request, 'wallet/withdraw.html')
+    return render(request, 'wallet/withdraw.html', context)
 
 
 @csrf_exempt

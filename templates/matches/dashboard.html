@@ -4,30 +4,82 @@
 
 {% block content %}
 <div class="space-y-4 max-w-7xl mx-auto">
+    
+   
 
-    <!-- ══════════════════════════════════════════ -->
-    <!-- PAGE HEADER                                -->
-    <!-- ══════════════════════════════════════════ -->
-    <div class="flex items-start justify-between gap-3">
-        <div>
-            <h1 class="text-xl md:text-2xl font-black tracking-tight leading-tight">⚽ Match Dashboard</h1>
-            <p class="text-xs opacity-50 mt-0.5">Live odds · AI predictions · Real-time updates</p>
+    <div class="sticky top-0 z-30 mx-0 md:mx-0 px-4 space-y-2 md:px-0 py-2 bg-base-300/95 backdrop-blur-md">
+        <!-- ══════════════════════════════════════════ -->
+        <!-- PAGE HEADER                                -->
+        <!-- ══════════════════════════════════════════ -->
+        <div class="flex items-start justify-between gap-3">
+            <div>
+                <h1 class="text-xl md:text-2xl font-black tracking-tight leading-tight">⚽ Match Dashboard</h1>
+                <p class="text-xs opacity-50 mt-0.5">Live odds · AI predictions · Real-time updates</p>
+            </div>
+            <!-- Live feed indicator -->
+            <div class="flex items-center gap-1.5 flex-shrink-0 mt-1">
+                <span class="relative flex h-2.5 w-2.5">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+                </span>
+                <span class="text-[10px] font-bold opacity-60 hidden sm:inline">Live feed</span>
+            </div>
         </div>
-        <!-- Live feed indicator -->
-        <div class="flex items-center gap-1.5 flex-shrink-0 mt-1">
-            <span class="relative flex h-2.5 w-2.5">
-                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
-            </span>
-            <span class="text-[10px] font-bold opacity-60 hidden sm:inline">Live feed</span>
+       
+        <!-- Glass blur backdrop -->
+        <div class="relative overflow-hidden bg-gradient-to-r from-emerald-950/95 via-teal-900/95 to-slate-950/95 backdrop-blur-xl rounded-xl border-b border-emerald-500/20 shadow-2xl shadow-emerald-950/40">
+            <!-- Decorative orbs -->
+            <div class="absolute -right-12 -top-12 w-40 h-40 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none"></div>
+            <div class="absolute -left-12 -bottom-12 w-40 h-40 rounded-full bg-teal-500/8 blur-3xl pointer-events-none"></div>
+            <!-- Subtle shimmer line -->
+            <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-400/40 to-transparent"></div>
+    
+            <div class="relative z-10 flex items-center justify-between gap-4 px-4 md:px-6 py-4 md:py-5">
+                <!-- Left: Balance Info -->
+                <div class="space-y-0.5 min-w-0">
+                    <div class="flex items-center gap-2">
+                        <span class="text-[10px] font-black uppercase tracking-widest text-emerald-400/80">Available Balance</span>
+                        {% if wallet.is_locked %}
+                            <span class="badge badge-error badge-xs font-bold text-[8px] px-1.5">🔒 LOCKED</span>
+                        {% else %}
+                            <span class="flex items-center gap-1 text-[9px] text-emerald-400/60 font-bold">
+                                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block"></span>
+                                LIVE
+                            </span>
+                        {% endif %}
+                    </div>
+                    <!-- Live-updating balance via HTMX -->
+                    <div class="flex items-baseline gap-2" id="sticky-balance-display"
+                         hx-get="{% url 'wallet:balance_partial' %}"
+                         hx-trigger="load, every 15s"
+                         hx-swap="innerHTML">
+                        <span class="text-2xl md:text-3xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-teal-200 to-cyan-300">
+                            GHS {{ wallet.balance }}
+                        </span>
+                    </div>
+                    <p class="text-[9px] text-white/35 font-semibold truncate">
+                        Last txn: {% if transactions %}{{ transactions.0.created_at|date:"M d, H:i" }}{% else %}No transactions yet{% endif %}
+                    </p>
+                </div>
+    
+                <!-- Right: Action Buttons -->
+                <div class="flex gap-2 flex-shrink-0">
+                    <a href="{% url 'wallet:deposit' %}"
+                       class="btn btn-sm border-0 bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-500 hover:to-teal-500 text-slate-950 font-black px-4 md:px-6 rounded-xl shadow-lg shadow-emerald-500/20 active:scale-95 transition-all duration-150">
+                        📥 <span class="hidden sm:inline">Deposit</span>
+                    </a>
+                    <a href="{% url 'wallet:withdraw' %}"
+                       class="btn btn-sm btn-outline border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/10 hover:border-emerald-400 px-4 md:px-6 rounded-xl active:scale-95 transition-all duration-150">
+                        📤 <span class="hidden sm:inline">Withdraw</span>
+                    </a>
+                </div>
+            </div>
         </div>
-    </div>
 
-    <!-- ══════════════════════════════════════════ -->
-    <!-- STICKY FILTER BAR                          -->
-    <!-- ══════════════════════════════════════════ -->
-    <div class="sticky top-0 z-30 mx-4 md:mx-0 px-4 md:px-0 py-2 bg-base-300/95 backdrop-blur-md">
-        <div class="glass-panel border border-base-200/40 rounded-2xl p-2 flex flex-col sm:flex-row sm:items-center gap-2 shadow-sm">
+        <!-- ══════════════════════════════════════════ -->
+        <!-- STICKY FILTER BAR                          -->
+        <!-- ══════════════════════════════════════════ -->
+         <div class="glass-panel border border-base-200/40 rounded-2xl p-2 flex flex-col sm:flex-row sm:items-center gap-2 shadow-sm">
             <input type="hidden" name="filter" id="active-filter" value="upcoming">
 
             <!-- Status tabs -->
@@ -73,14 +125,11 @@
         </div>
     </div>
 
-    <!--Wallet with an amount and a link to overview-->
-    <div class="card bg-base-100 border border-base-200 shadow-xl rounded-2xl overflow-hidden">
-        <div class="card-body p-6 md:p-8 space-y-6">
-            <h2 class="font-extrabold text-lg md:text-xl text-base-content">Wallet</h2>
-            <p class="text-2xl md:text-3xl font-black text-primary">${{ user.wallet.balance|floatformat:2 }}</p>
-            <a href="{% url 'wallet:overview' %}" class="btn btn-primary btn-sm">View Overview</a>
-        </div>
-    </div>
+    {% comment %} <!--Wallet with an amount and a link to overview-->
+    <div class="sticky top-0 z-30 -mx-4 md:-mx-6 lg:-mx-8 px-4 md:px-6 lg:px-8 mb-6"
+         id="wallet-sticky-banner">
+    </div> {% endcomment %}
+
 
     <!-- ══════════════════════════════════════════ -->
     <!-- MATCH LIST                                  -->

@@ -139,12 +139,12 @@
                     <input type="text" 
                            id="bank_account_number_input"
                            name="bank_account_number" 
-                           placeholder="e.g. 1029384756" 
+                           placeholder="e.g. 1441-0123-4567****" 
                            hx-get="{% url 'wallet:verify_account' %}"
                            hx-trigger="keyup changed delay:800ms"
                            hx-target="#account_verification_result"
                            hx-include="[name='bank_code']"
-                           class="input input-bordered w-full font-bold bg-base-200/50 border-base-content/10 focus:border-primary text-base-content focus:outline-none rounded-xl" />
+                           class="input input-bordered w-full font-bold bg-base-200/50 border-base-content/10 placeholder:text-slate-600 focus:border-primary text-base-content focus:outline-none rounded-xl" />
                 </div>
             </div>
 
