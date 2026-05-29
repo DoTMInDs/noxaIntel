@@ -6,7 +6,9 @@ from pathlib import Path
 import environ
 from decimal import Decimal
 
+from dotenv import load_dotenv
 
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -245,8 +247,8 @@ LOGGING = {
 }
 
 # Paystack API Keys & Integration Settings (GHS)
-PAYSTACK_SECRET_KEY = env('PAYSTACK_SECRET_KEY', default='sk_test_mock_secret_key_noxaintel_2026')
-PAYSTACK_PUBLIC_KEY = env('PAYSTACK_PUBLIC_KEY', default='pk_test_mock_public_key_noxaintel_2026')
+PAYSTACK_PUBLIC_KEY = os.getenv('PAYSTACK_PUBLIC_KEY', '')
+PAYSTACK_SECRET_KEY = os.getenv('PAYSTACK_SECRET_KEY', '')
 
 # Sportsbook Betting & Wallet Limit Rules (in GHS)
 MIN_STAKE = Decimal('1.00')          # GHS 1.00 minimum stake
