@@ -4,6 +4,8 @@ Django settings for config project.
 import os
 from pathlib import Path
 import environ
+from decimal import Decimal
+
 
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
@@ -102,6 +104,7 @@ INSTALLED_APPS = [
     'notifications.apps.NotificationsConfig',
     'analytics.apps.AnalyticsConfig',
     'pwa.apps.PwaConfig',
+    'wallet.apps.WalletConfig',
 ]
 
 
@@ -240,3 +243,15 @@ LOGGING = {
         },
     },
 }
+
+# Paystack API Keys & Integration Settings (GHS)
+PAYSTACK_SECRET_KEY = env('PAYSTACK_SECRET_KEY', default='sk_test_mock_secret_key_noxaintel_2026')
+PAYSTACK_PUBLIC_KEY = env('PAYSTACK_PUBLIC_KEY', default='pk_test_mock_public_key_noxaintel_2026')
+
+# Sportsbook Betting & Wallet Limit Rules (in GHS)
+MIN_STAKE = Decimal('1.00')          # GHS 1.00 minimum stake
+MAX_STAKE = Decimal('10000.00')      # GHS 10,000 maximum stake
+MAX_PAYOUT = Decimal('100000.00')    # GHS 100,000 maximum potential payout
+MIN_DEPOSIT = Decimal('3.00')        # GHS 3.00 minimum deposit
+MIN_WITHDRAWAL = Decimal('3.00')     # GHS 3.00 minimum withdrawal
+

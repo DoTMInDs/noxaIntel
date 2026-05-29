@@ -1,0 +1,22 @@
+<select name="{{ select_name }}" id="{{ select_id }}" class="select select-bordered w-full font-bold bg-base-200/50 border-base-content/10 focus:border-primary text-base-content focus:outline-none"
+        hx-get="{% url 'wallet:verify_account' %}" 
+        hx-trigger="change" 
+        hx-target="#account_verification_result"
+        {% if select_name == 'momo_code' %}
+        hx-include="[name='momo_account_number']"
+        onchange="document.getElementById('momo_bank_name_input').value = this.options[this.selectedIndex].text;"
+        {% else %}
+        hx-include="[name='bank_account_number']"
+        onchange="document.getElementById('bank_name_input').value = this.options[this.selectedIndex].text;"
+        {% endif %}
+        >
+    <option value="" disabled selected class="text-base-content/40">{{ placeholder }}</option>
+    {% for bank in banks %}
+        <option value="{{ bank.code }}" class="bg-base-300">{{ bank.name }}</option>
+    {% endfor %}
+</select>
+{% if select_name == 'momo_code' %}
+<input type="hidden" name="momo_bank_name" id="momo_bank_name_input" value="" />
+{% else %}
+<input type="hidden" name="bank_name" id="bank_name_input" value="" />
+{% endif %}

@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}NoxaIntel — Fund Wallet{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto space-y-6">
+    <!-- Breadcrumb Header -->
+    <div class="flex items-center justify-between pb-2 border-b border-base-200/50">
+        <div>
+            <h1 class="text-xl font-black tracking-tight">📥 Add Money</h1>
+            <p class="text-xs text-base-content/60 mt-0.5">Top-up your GHS balance via Paystack gateway.</p>
+        </div>
+        <a href="{% url 'wallet:overview' %}" class="btn btn-xs btn-ghost gap-1 opacity-60 hover:opacity-100 font-bold">
+            ← Cancel
+        </a>
+    </div>
+
+    <!-- Deposit Form Panel -->
+    <div class="glass-panel rounded-3xl border border-base-200/40 p-6 md:p-8 space-y-6 shadow-xl relative overflow-hidden">
+        <!-- Accent light -->
+        <div class="absolute -right-16 -top-16 w-32 h-32 rounded-full bg-emerald-500/10 blur-3xl"></div>
+
+        <form action="{% url 'wallet:deposit' %}" method="post" class="space-y-6" id="deposit_form">
+            {% csrf_token %}
+            
+            <!-- Amount Input Box -->
+            <div class="form-control w-full space-y-2">
+                <label class="label font-bold text-xs uppercase tracking-wider text-base-content/75">
+                    Deposit Amount (GHS)
+                </label>
+                <div class="relative flex items-center">
+                    <span class="absolute left-4 text-lg font-black text-emerald-400">GH₵</span>
+                    <input type="number" 
+                           name="amount" 
+                           id="deposit_amount_input"
+                           step="0.01" 
+                           min="3" 
+                           placeholder="0.00" 
+                           required 
+                           class="input input-lg w-full pl-14 font-black text-xl text-base-content bg-base-200/50 border-base-content/10 focus:border-emerald-400 focus:outline-none rounded-2xl" />
+                </div>
+                <div class="label flex justify-between">
+                    <span class="label-text-alt text-[10px] text-base-content/40 font-semibold">Min: GHS 3.00</span>
+                    <span class="label-text-alt text-[10px] text-base-content/40 font-semibold">Gateway Fee: Free</span>
+                </div>
+            </div>
+
+            <!-- Quick Select Chips Grid -->
+            <div class="space-y-2">
+                <span class="block text-xs font-bold uppercase tracking-wider text-base-content/50">Quick Preset Amount</span>
+                <div class="grid grid-cols-5 gap-2">
+                    <button type="button" onclick="setDepositAmount(5)" class="btn btn-sm btn-outline border-base-content/10 font-black text-xs hover:bg-emerald-500/10 hover:border-emerald-500/30 hover:text-emerald-400 rounded-xl px-1">
+                        5
+                    </button>
+                    <button type="button" onclick="setDepositAmount(10)" class="btn btn-sm btn-outline border-base-content/10 font-black text-xs hover:bg-emerald-500/10 hover:border-emerald-500/30 hover:text-emerald-400 rounded-xl px-1">
+                        10
+                    </button>
+                    <button type="button" onclick="setDepositAmount(20)" class="btn btn-sm btn-outline border-base-content/10 font-black text-xs hover:bg-emerald-500/10 hover:border-emerald-500/30 hover:text-emerald-400 rounded-xl px-1">
+                        20
+                    </button>
+                    <button type="button" onclick="setDepositAmount(50)" class="btn btn-sm btn-outline border-base-content/10 font-black text-xs hover:bg-emerald-500/10 hover:border-emerald-500/30 hover:text-emerald-400 rounded-xl px-1">
+                        50
+                    </button>
+                    <button type="button" onclick="setDepositAmount(100)" class="btn btn-sm btn-outline border-base-content/10 font-black text-xs hover:bg-emerald-500/10 hover:border-emerald-500/30 hover:text-emerald-400 rounded-xl px-1">
+                        100
+                    </button>
+                </div>
+            </div>
+
+            <!-- Info panel -->
+            <div class="bg-base-200/40 p-4 rounded-2xl border border-base-200/50 flex gap-3 text-xs items-start">
+                <span class="text-base">🛡️</span>
+                <div class="space-y-1">
+                    <p class="font-extrabold text-base-content/80">Secure Checkout Guarantee</p>
+                    <p class="text-[10px] text-base-content/50 leading-relaxed font-semibold">Your funds are protected. We utilize Paystack's bank-grade 256-bit encryption. Supports MTN Mobile Money, Telecel Cash, AT Money, and Visa/Mastercard.</p>
+                </div>
+            </div>
+
+            <!-- Submit Button CTA -->
+            <button type="submit" class="btn btn-lg w-full border-0 bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-500 hover:to-teal-500 text-slate-950 font-black rounded-2xl shadow-xl shadow-emerald-500/10 active:scale-95 transition-all duration-150">
+                🚀 Proceed to Paystack
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+    function setDepositAmount(value) {
+        const input = document.getElementById('deposit_amount_input');
+        input.value = parseFloat(value).toFixed(2);
+        
+        // Add visual micro-interaction classes
+        input.classList.add('scale-102', 'border-emerald-400');
+        setTimeout(() => {
+            input.classList.remove('scale-102', 'border-emerald-400');
+        }, 300);
+    }
+</script>
+{% endblock %}

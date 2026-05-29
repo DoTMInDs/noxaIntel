@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+
+{% block title %}NoxaIntel — Bet Slip Receipt{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between pb-2 border-b border-base-200/50">
+        <div>
+            <h1 class="text-xl font-black tracking-tight">🎟️ Bet Ticket</h1>
+            <p class="text-xs text-base-content/60 mt-0.5">Official digital receipt of placed bet slip.</p>
+        </div>
+        <a href="{% url 'betting:my_bets' %}" class="btn btn-xs btn-ghost gap-1 opacity-60 hover:opacity-100 font-bold">
+            ← History
+        </a>
+    </div>
+
+    <!-- Bet Receipt Card -->
+    <div class="glass-panel rounded-3xl border border-base-200/40 p-6 md:p-8 space-y-6 shadow-xl relative overflow-hidden">
+        <!-- Ticket cut effect styling -->
+        <div class="absolute -left-3 top-1/3 w-6 h-6 rounded-full bg-base-300 border-r border-base-200/50"></div>
+        <div class="absolute -right-3 top-1/3 w-6 h-6 rounded-full bg-base-300 border-l border-base-200/50"></div>
+
+        <!-- Header -->
+        <div class="flex justify-between items-start border-b border-dashed border-base-200/60 pb-4">
+            <div class="space-y-0.5">
+                <span class="block text-xs font-black text-base-content/85">TICKET ID: #{{ slip.id }}</span>
+                <span class="block text-[10px] opacity-40 font-semibold">Placed: {{ slip.created_at|date:"M d, Y @ H:i" }}</span>
+            </div>
+            <span class="badge border-0 font-bold uppercase text-[9px] py-2.5
+                {% if slip.status == 'WON' %}bg-emerald-500/10 text-emerald-400
+                {% elif slip.status == 'LOST' %}bg-error/10 text-error
+                {% elif slip.status == 'CASHOUT' %}bg-cyan-500/10 text-cyan-400
+                {% else %}bg-warning/10 text-warning{% endif %}">
+                {{ slip.get_status_display }}
+            </span>
+        </div>
+
+        <!-- Selections -->
+        <div class="space-y-4 my-2">
+            <span class="block text-[10px] uppercase font-black tracking-wider text-base-content/40">Selections Summary</span>
+            <div class="space-y-3">
+                {% for sel in selections %}
+                    <div class="space-y-1 text-xs">
+                        <div class="flex justify-between items-center">
+                            <span class="font-extrabold text-base-content/95">{{ sel.match.home_team.name }} vs {{ sel.match.away_team.name }}</span>
+                            <span class="badge font-black border-0 text-[8px] uppercase
+                                {% if sel.result == 'WON' %}bg-emerald-500/10 text-emerald-400
+                                {% elif sel.result == 'LOST' %}bg-error/10 text-error
+                                {% else %}bg-warning/10 text-warning{% endif %}">
+                                {{ sel.result }}
+                            </span>
+                        </div>
+                        <div class="flex justify-between text-[10px] text-base-content/50 font-semibold">
+                            <span>{{ sel.get_market_display }}</span>
+                            <span class="font-bold">@ {{ sel.odds_at_placement }}</span>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <!-- Financial Summary -->
+        <div class="border-t border-dashed border-base-200/60 pt-4 space-y-3">
+            <div class="flex justify-between text-xs font-semibold text-base-content/60">
+                <span>Bet Type</span>
+                <span class="font-bold text-base-content">{{ slip.get_slip_type_display }}</span>
+            </div>
+            <div class="flex justify-between text-xs font-semibold text-base-content/60">
+                <span>Total Stake</span>
+                <span class="font-bold text-base-content">GHS {{ slip.total_stake }}</span>
+            </div>
+            <div class="flex justify-between text-xs font-semibold text-base-content/60">
+                <span>Total Accumulated Odds</span>
+                <span class="font-bold text-base-content">@ {{ slip.total_odds }}</span>
+            </div>
+            
+            {% if slip.status == 'CASHOUT' %}
+                <div class="flex justify-between text-xs font-semibold text-cyan-400">
+                    <span>Early Cash Out Amount</span>
+                    <span class="font-black text-sm">GHS {{ slip.cash_out_amount }}</span>
+                </div>
+            {% endif %}
+
+            <div class="flex justify-between items-baseline border-t border-base-200/40 pt-3">
+                <span class="text-xs font-black uppercase text-base-content/75">
+                    {% if slip.is_settled %}Actual Payout{% else %}Est. Potential Payout{% endif %}
+                </span>
+                <span class="text-lg font-black {% if slip.status == 'WON' or slip.status == 'CASHOUT' %}text-emerald-400{% else %}text-base-content{% endif %}">
+                    GHS {% if slip.is_settled %}{{ slip.actual_payout }}{% else %}{{ slip.potential_payout }}{% endif %}
+                </span>
+            </div>
+        </div>
+
+        <!-- Ledger details -->
+        {% if slip.transaction %}
+            <div class="bg-base-200/40 p-3.5 rounded-2xl border border-base-200/50 space-y-1.5 text-[10px]">
+                <div class="flex justify-between font-semibold text-base-content/40">
+                    <span>Ledger ID</span>
+                    <span class="font-mono text-base-content/60">{{ slip.transaction.reference|slice:":20"|upper }}</span>
+                </div>
+                <div class="flex justify-between font-semibold text-base-content/40">
+                    <span>Ledger Type</span>
+                    <span class="font-bold text-base-content/60">{{ slip.transaction.get_type_display }}</span>
+                </div>
+                <div class="flex justify-between font-semibold text-base-content/40">
+                    <span>Ledger Status</span>
+                    <span class="font-bold text-emerald-400">{{ slip.transaction.status }}</span>
+                </div>
+            </div>
+        {% endif %}
+
+        <!-- Inline Cash Out CTA in detail page -->
+        {% if slip.status == 'SUBMITTED' and live_cashout_offer > 0 %}
+            <form action="{% url 'betting:cash_out' slip.id %}" method="post" class="pt-2">
+                {% csrf_token %}
+                <button type="submit" 
+                        onclick="return confirm('Are you sure you want to Cash Out early for GHS {{ live_cashout_offer:.2f }}?')"
+                        class="btn btn-md btn-error w-full font-black text-xs rounded-xl shadow-lg active:scale-95 transition-all duration-150 gap-1.5">
+                    ⚡ CASHOUT NOW GHS {{ live_cashout_offer }}
+                </button>
+            </form>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

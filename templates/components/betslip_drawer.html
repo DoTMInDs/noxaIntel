@@ -1,0 +1,445 @@
+<!-- Floating Betslip Toggle Pill Button -->
+<div id="betslip-floating-toggle" class="fixed bottom-20 md:bottom-6 right-4 z-[60] transition-all duration-300 transform translate-y-24 opacity-0 scale-90">
+    <button onclick="toggleBetslipDrawer()" class="btn border-0 bg-gradient-to-r from-primary to-secondary text-white font-black rounded-full px-5 py-3 shadow-2xl flex items-center gap-2 hover:scale-105 active:scale-95 transition-all duration-150 relative">
+        <span>🎟️</span>
+        <span>Betslip</span>
+        <span id="betslip-badge-count" class="badge badge-error badge-sm font-black p-2">0</span>
+    </button>
+</div>
+
+<!-- Slide-Up Betslip Drawer -->
+<div id="betslip-drawer-panel" class="fixed bottom-0 left-0 right-0 z-[60] bg-base-100/95 backdrop-blur-xl border-t border-base-200/60 shadow-2xl transition-all duration-500 transform translate-y-full rounded-t-3xl max-h-[85dvh] flex flex-col max-w-lg mx-auto overflow-hidden" style="padding-bottom: env(safe-area-inset-bottom, 0px);">
+    
+    <!-- Drawer Header (Sticky) -->
+    <div class="px-5 py-4 border-b border-base-200/50 flex items-center justify-between bg-base-200/20">
+        <div class="flex items-center gap-2">
+            <span class="text-lg">🎟️</span>
+            <span class="text-sm font-black tracking-wider uppercase text-base-content/85">Betslip</span>
+            <span id="drawer-badge-count" class="badge badge-primary font-black">0</span>
+        </div>
+        <div class="flex items-center gap-3">
+            <button onclick="clearBetslip()" class="btn btn-xs btn-ghost text-[10px] font-bold text-error uppercase tracking-wider">
+                🧹 Clear All
+            </button>
+            <button onclick="toggleBetslipDrawer()" class="btn btn-circle btn-xs btn-neutral focus:outline-none">
+                ✕
+            </button>
+        </div>
+    </div>
+
+    <!-- Scrollable Selection List -->
+    <div id="betslip-items-list" class="flex-1 overflow-y-auto p-4 space-y-3.5 divide-y divide-base-200/40">
+        <!-- Rendered dynamically via JavaScript -->
+    </div>
+
+    <!-- Bet Parameters & CTA Footer -->
+    <div class="p-5 bg-base-200/40 border-t border-base-200/60 space-y-4">
+        
+        <!-- Single / Accumulator Toggle -->
+        <div class="grid grid-cols-2 gap-2 tabs tabs-boxed bg-base-300 p-1 rounded-xl">
+            <button onclick="setSlipType('SINGLE')" id="toggle-type-single" class="tab font-black text-[10px] tracking-wider uppercase rounded-lg py-1.5 transition-all duration-200 tab-active bg-base-100 text-base-content shadow-sm">
+                Single
+            </button>
+            <button onclick="setSlipType('ACCUMULATOR')" id="toggle-type-acca" class="tab font-black text-[10px] tracking-wider uppercase rounded-lg py-1.5 transition-all duration-200 opacity-60 text-base-content">
+                Accumulator
+            </button>
+        </div>
+
+        <div class="space-y-2.5">
+            <!-- Odds / Payout summaries -->
+            <div class="flex justify-between items-center text-xs">
+                <span class="font-extrabold text-base-content/50">Total Odds</span>
+                <span id="betslip-total-odds" class="font-black text-sm text-base-content">@ 1.00</span>
+            </div>
+
+            <!-- Stake input -->
+            <div class="form-control">
+                <div class="relative flex items-center">
+                    <span class="absolute left-4 text-xs font-black text-emerald-400">GHS</span>
+                    <input type="number" 
+                           id="betslip-stake-input" 
+                           placeholder="Enter stake amount" 
+                           step="1"
+                           min="1"
+                           onkeyup="calculateBetslipPayout()"
+                           onchange="calculateBetslipPayout()"
+                           class="input input-bordered input-sm w-full pl-12 font-extrabold text-xs bg-base-200/80 border-base-content/10 focus:border-primary focus:outline-none rounded-xl" />
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center text-xs">
+                <span class="font-extrabold text-base-content/50">Potential Win</span>
+                <span id="betslip-potential-payout" class="font-black text-sm text-emerald-400">GHS 0.00</span>
+            </div>
+
+            <!-- User Balance snapshot -->
+            <div class="flex justify-between items-center text-[10px] border-t border-base-200/30 pt-2.5">
+                <span class="font-bold opacity-45">Your Balance</span>
+                <span class="font-black text-base-content/75 flex items-center gap-1">
+                    💳 <span id="betslip-wallet-balance">GHS 0.00</span>
+                </span>
+            </div>
+        </div>
+
+        <!-- Place Bet Button -->
+        <button id="betslip-place-bet-btn" 
+                onclick="submitBetslipBet()"
+                class="btn btn-md w-full border-0 bg-gradient-to-r from-primary to-secondary text-white font-black rounded-xl shadow-lg hover:scale-[1.01] active:scale-95 transition-all duration-150 uppercase tracking-wider text-xs">
+            🎲 Place Bet
+        </button>
+    </div>
+</div>
+
+<!-- Betslip Client-side Core Logic -->
+<script>
+    // State
+    let betslipSelections = [];
+    let betslipType = 'SINGLE'; // 'SINGLE' | 'ACCUMULATOR'
+
+    // Load from localStorage on load
+    window.addEventListener('DOMContentLoaded', () => {
+        initBetslip();
+    });
+
+    function initBetslip() {
+        try {
+            const saved = localStorage.getItem('noxaintel_betslip');
+            if (saved) {
+                betslipSelections = JSON.parse(saved);
+            }
+            const savedType = localStorage.getItem('noxaintel_betslip_type');
+            if (savedType) {
+                betslipType = savedType;
+            }
+        } catch (e) {
+            console.error('Failed to load betslip from localStorage', e);
+        }
+        renderBetslip();
+    }
+
+    function saveBetslip() {
+        try {
+            localStorage.setItem('noxaintel_betslip', JSON.stringify(betslipSelections));
+            localStorage.setItem('noxaintel_betslip_type', betslipType);
+        } catch (e) {
+            console.error('Failed to save betslip to localStorage', e);
+        }
+    }
+
+    function toggleBetslipDrawer() {
+        const panel = document.getElementById('betslip-drawer-panel');
+        panel.classList.toggle('translate-y-full');
+    }
+
+    function setSlipType(type) {
+        betslipType = type;
+        const btnSingle = document.getElementById('toggle-type-single');
+        const btnAcca = document.getElementById('toggle-type-acca');
+
+        if (type === 'SINGLE') {
+            btnSingle.classList.add('tab-active', 'bg-base-100');
+            btnSingle.classList.remove('opacity-60');
+            btnAcca.classList.remove('tab-active', 'bg-base-100');
+            btnAcca.classList.add('opacity-60');
+        } else {
+            btnAcca.classList.add('tab-active', 'bg-base-100');
+            btnAcca.classList.remove('opacity-60');
+            btnSingle.classList.remove('tab-active', 'bg-base-100');
+            btnSingle.classList.add('opacity-60');
+        }
+
+        saveBetslip();
+        renderBetslip();
+    }
+
+    function toggleSelection(matchId, market, odds, matchLabel, btnElement) {
+        // Find existing match index
+        const index = betslipSelections.findIndex(sel => sel.match_id === matchId);
+        
+        if (index > -1) {
+            const existing = betslipSelections[index];
+            if (existing.market === market) {
+                // If same market, remove from slip
+                betslipSelections.splice(index, 1);
+                if (btnElement) btnElement.classList.remove('btn-primary', 'shadow-md', 'scale-102');
+            } else {
+                // If different market on same match, update the selection
+                betslipSelections[index] = { match_id: matchId, market, odds: parseFloat(odds), match_label: matchLabel };
+                
+                // Clear sibling button active states (simplified via DOM)
+                const parent = btnElement.parentElement;
+                if (parent) {
+                    const siblingBtns = parent.querySelectorAll('.odds-btn');
+                    siblingBtns.forEach(btn => btn.classList.remove('btn-primary', 'shadow-md'));
+                }
+                if (btnElement) btnElement.classList.add('btn-primary', 'shadow-md');
+            }
+        } else {
+            // New selection
+            betslipSelections.push({ match_id: matchId, market, odds: parseFloat(odds), match_label: matchLabel });
+            if (btnElement) btnElement.classList.add('btn-primary', 'shadow-md');
+        }
+
+        // Keep multi-leg default to ACCUMULATOR, single to SINGLE
+        if (betslipSelections.length > 1) {
+            betslipType = 'ACCUMULATOR';
+            setSlipType('ACCUMULATOR');
+        } else {
+            betslipType = 'SINGLE';
+            setSlipType('SINGLE');
+        }
+
+        saveBetslip();
+        renderBetslip();
+        
+        // Pulse badge interaction
+        const badge = document.getElementById('betslip-badge-count');
+        badge.classList.add('scale-125');
+        setTimeout(() => badge.classList.remove('scale-125'), 200);
+    }
+
+    function removeSelection(matchId) {
+        betslipSelections = betslipSelections.filter(sel => sel.match_id !== matchId);
+        
+        // Remove button highlighted states in matches page
+        const matchButtons = document.querySelectorAll(`[onclick*="${matchId}"]`);
+        matchButtons.forEach(btn => btn.classList.remove('btn-primary', 'shadow-md'));
+
+        saveBetslip();
+        renderBetslip();
+    }
+
+    function clearBetslip() {
+        betslipSelections = [];
+        betslipType = 'SINGLE';
+        
+        // Clear all highlighted active states
+        const activeButtons = document.querySelectorAll('.odds-btn.btn-primary');
+        activeButtons.forEach(btn => btn.classList.remove('btn-primary', 'shadow-md'));
+
+        saveBetslip();
+        renderBetslip();
+    }
+
+    function renderBetslip() {
+        const count = betslipSelections.length;
+        
+        // Update badge counts
+        document.getElementById('betslip-badge-count').textContent = count;
+        document.getElementById('drawer-badge-count').textContent = count;
+
+        // Toggle floating pill visibility
+        const pill = document.getElementById('betslip-floating-toggle');
+        if (count > 0) {
+            pill.classList.remove('translate-y-24', 'opacity-0', 'scale-90');
+        } else {
+            pill.classList.add('translate-y-24', 'opacity-0', 'scale-90');
+            // Force drawer closed if empty
+            document.getElementById('betslip-drawer-panel').classList.add('translate-y-full');
+        }
+
+        // Render List Items
+        const listContainer = document.getElementById('betslip-items-list');
+        listContainer.innerHTML = '';
+
+        let calculatedTotalOdds = 1.00;
+
+        if (count === 0) {
+            listContainer.innerHTML = `
+                <div class="text-center py-8 text-base-content/40 space-y-1 font-semibold text-xs">
+                    <p>📭 Slip is currently empty.</p>
+                    <p class="text-[10px] opacity-60">Click on upcoming match odds to add selections.</p>
+                </div>
+            `;
+            document.getElementById('betslip-total-odds').textContent = '@ 0.00';
+            calculateBetslipPayout();
+            return;
+        }
+
+        // Map short code to human-friendly market
+        const marketNames = {
+            'HOME_WIN': 'Home Win (1)',
+            'DRAW': 'Draw (X)',
+            'AWAY_WIN': 'Away Win (2)',
+            'OVER_2_5': 'Over 2.5',
+            'UNDER_2_5': 'Under 2.5',
+            'BTTS_YES': 'BTTS Yes',
+            'BTTS_NO': 'BTTS No'
+        };
+
+        betslipSelections.forEach(sel => {
+            const itemOdds = parseFloat(sel.odds);
+            calculatedTotalOdds *= itemOdds;
+
+            const div = document.createElement('div');
+            div.className = 'py-3 flex justify-between items-start text-xs';
+            div.innerHTML = `
+                <div class="space-y-1 pr-4">
+                    <span class="block font-black text-base-content/90 leading-tight">${sel.match_label}</span>
+                    <span class="block text-[10px] text-base-content/50 font-bold">
+                        Market: <span class="bg-base-200 px-1.5 py-0.5 rounded text-base-content/75">${marketNames[sel.market] || sel.market}</span>
+                    </span>
+                </div>
+                <div class="flex items-center gap-3.5 flex-shrink-0">
+                    <span class="font-extrabold text-emerald-400">@ ${itemOdds.toFixed(2)}</span>
+                    <button onclick="removeSelection('${sel.match_id}')" class="btn btn-circle btn-ghost btn-xs text-error font-bold opacity-60 hover:opacity-100">
+                        ✕
+                    </button>
+                </div>
+            `;
+            listContainer.appendChild(div);
+        });
+
+        // Dynamic Odds display under single vs accumulator
+        if (betslipType === 'SINGLE') {
+            // For single, we average or just show average/sum for view (each is wagered separately),
+            // but standard sportsbook behaves by taking the selected single odds or sum.
+            // Let's display the product for Acca, and standard @ odds for individual if single.
+            // To be extremely intuitive, let's display total odds for the bet
+            if (count === 1) {
+                document.getElementById('betslip-total-odds').textContent = `@ ${calculatedTotalOdds.toFixed(2)}`;
+            } else {
+                document.getElementById('betslip-total-odds').textContent = 'Individual Stakes';
+            }
+        } else {
+            document.getElementById('betslip-total-odds').textContent = `@ ${calculatedTotalOdds.toFixed(2)}`;
+        }
+
+        // Fetch live balance from API (navbar chip has been removed)
+        fetch('/wallet/balance/partial/')
+            .then(r => r.text())
+            .then(html => {
+                // Strip any HTML tags – the response is a styled <span>GHS X.XX</span>
+                const tmp = document.createElement('div');
+                tmp.innerHTML = html;
+                const text = tmp.textContent.trim() || 'GHS 0.00';
+                const el = document.getElementById('betslip-wallet-balance');
+                if (el) el.textContent = text;
+            })
+            .catch(() => {});
+
+        calculateBetslipPayout();
+    }
+
+    function calculateBetslipPayout() {
+        const input = document.getElementById('betslip-stake-input');
+        let stake = parseFloat(input.value) || 0;
+        
+        let calculatedTotalOdds = 1.00;
+        betslipSelections.forEach(sel => {
+            calculatedTotalOdds *= parseFloat(sel.odds);
+        });
+
+        let payout = 0;
+        if (betslipSelections.length === 0) {
+            payout = 0;
+        } else if (betslipType === 'SINGLE') {
+            // In single mode, stake is applied per leg or total distributed.
+            // Let's wagers stake per selection as standard
+            payout = stake * calculatedTotalOdds; 
+        } else {
+            // Accumulator
+            payout = stake * calculatedTotalOdds;
+        }
+
+        // Cap potential payout
+        const maxPayout = 100000.00; // GHS 100k
+        if (payout > maxPayout) {
+            payout = maxPayout;
+        }
+
+        document.getElementById('betslip-potential-payout').textContent = `GHS ${payout.toFixed(2)}`;
+    }
+
+    async function submitBetslipBet() {
+        const btn = document.getElementById('betslip-place-bet-btn');
+        const input = document.getElementById('betslip-stake-input');
+        const stake = parseFloat(input.value) || 0;
+
+        if (betslipSelections.length === 0) {
+            alert('Your betslip is empty.');
+            return;
+        }
+
+        if (stake <= 0) {
+            alert('Please enter a valid stake amount.');
+            return;
+        }
+
+        // Disable button
+        btn.disabled = true;
+        btn.innerHTML = '<span class="loading loading-spinner loading-xs"></span> Submitting...';
+
+        const payload = {
+            selections: betslipSelections,
+            stake: stake,
+            slip_type: betslipType
+        };
+
+        try {
+            // Reliable CSRF: read from cookie (Django always sets this)
+            function getCookie(name) {
+                let val = null;
+                if (document.cookie) {
+                    document.cookie.split(';').forEach(c => {
+                        const [k, v] = c.trim().split('=');
+                        if (k === name) val = decodeURIComponent(v);
+                    });
+                }
+                return val;
+            }
+            const csrfToken = getCookie('csrftoken') || '';
+
+            const response = await fetch('/betting/bet/place/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': csrfToken
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const res = await response.json();
+            
+            if (res.ok) {
+                // Bet placed successfully!
+                alert('🎉 ' + res.message);
+                clearBetslip();
+                toggleBetslipDrawer();
+                
+                // Update the betslip in-drawer balance display
+                const formattedBal = `GHS ${res.new_balance.toFixed(2)}`;
+                const balEl = document.getElementById('betslip-wallet-balance');
+                if (balEl) balEl.textContent = formattedBal;
+                // Also refresh the sticky wallet banner if user is on wallet page
+                const stickyBanner = document.getElementById('sticky-balance-display');
+                if (stickyBanner) htmx.trigger(stickyBanner, 'load');
+
+                // Redirect to betting slips page after 1.5s
+                setTimeout(() => {
+                    window.location.href = '/betting/bet/my-bets/';
+                }, 1000);
+            } else {
+                alert('⚠️ Failed to place bet: ' + res.message);
+            }
+        } catch (e) {
+            console.error('Error placing bet:', e);
+            alert('An unexpected error occurred during wagers. Please check network.');
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '🎲 Place Bet';
+        }
+    }
+
+    // Refresh active odds buttons on page load based on localStorage selections
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            betslipSelections.forEach(sel => {
+                // Find matching button on page and highlight
+                // Button click selector format: toggleSelection('matchId', 'market', ...
+                const btns = document.querySelectorAll(`button[onclick*="${sel.match_id}"][onclick*="${sel.market}"]`);
+                btns.forEach(btn => btn.classList.add('btn-primary', 'shadow-md'));
+            });
+        }, 500);
+    });
+</script>

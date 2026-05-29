@@ -98,6 +98,7 @@
     </script>
     
     {% if user.is_authenticated %}
+        {% include 'components/betslip_drawer.html' %}
         {% include 'components/bottom_nav.html' %}
     {% endif %}
 

@@ -15,4 +15,5 @@ urlpatterns = [
     path('notifications/', include('notifications.urls', namespace='notifications')),
     path('analytics/', include('analytics.urls', namespace='analytics')),
     path('pwa/', include('pwa.urls', namespace='pwa')),
+    path('', include('wallet.urls', namespace='wallet')),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

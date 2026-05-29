@@ -1,13 +1,13 @@
-<div class="navbar bg-base-100 border-b border-base-200 px-4 md:px-6 z-40 relative">
+<div class="navbar bg-base-100 border-b border-base-200 px-2 md:px-6 z-40 relative">
     <div class="flex-1">
-        <a href="{% url 'home' %}" class="btn btn-ghost normal-case text-xl font-black gap-2 tracking-wider">
+        <a href="{% url 'home' %}" class="btn btn-ghost normal-case text-lg md:text-xl font-black gap-1 md:gap-2 tracking-wider px-2">
             <span>⚽</span>
             <span class="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">NoxaIntel</span>
-            <span class="badge badge-primary badge-sm font-semibold tracking-normal">ML</span>
+            <span class="hidden sm:inline-flex badge badge-primary badge-sm font-semibold tracking-normal">ML</span>
         </a>
     </div>
 
-    <div class="flex-none gap-4">
+    <div class="flex-none gap-1.5 md:gap-4">
         {% if user.is_authenticated %}
             <!-- Subscription Tier Badge -->
             <div class="hidden sm:inline-flex">
@@ -25,6 +25,7 @@
                     </span>
                 {% endif %}
             </div>
+
 
             <!-- Notifications Bell -->
             <div class="dropdown dropdown-end">

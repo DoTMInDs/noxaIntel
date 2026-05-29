@@ -1,0 +1,177 @@
+{% extends "base.html" %}
+
+{% block title %}Payout Settlement Tracker (Sandbox) — NoxaIntel{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto space-y-6">
+    <!-- Sandbox Warning Banner -->
+    <div class="bg-indigo-500/10 border border-indigo-500/20 px-4 py-3 rounded-2xl flex gap-3 text-xs items-center text-indigo-400">
+        <span class="text-base">🛠️</span>
+        <div class="font-semibold">
+            <span class="font-extrabold uppercase">Payout Sandbox Engine:</span> Interact with the developer tool below to push webhook actions and watch the database state update in real-time.
+        </div>
+    </div>
+
+    <!-- Live Polling Container (HTMX) -->
+    <div id="tracker-outer" 
+         hx-get="{% url 'wallet:withdraw_status' wr.id %}" 
+         hx-trigger="every 1.5s" 
+         hx-target="#tracker-container" 
+         hx-swap="outerHTML">
+        
+        <!-- Render Initial Timeline Partial -->
+        {% include 'wallet/partials/withdraw_timeline.html' %}
+    </div>
+
+    <!-- DEVELOPER SANDBOX CONTROLS PANEL -->
+    <div class="glass-panel p-6 rounded-3xl border border-indigo-500/15 relative overflow-hidden space-y-4">
+        <!-- Pulse accent light -->
+        <div class="absolute -right-16 -bottom-16 w-32 h-32 rounded-full bg-indigo-500/5 blur-2xl"></div>
+
+        <div class="border-b border-base-200/50 pb-2 flex items-center justify-between">
+            <h3 class="text-xs font-black uppercase tracking-wider text-indigo-300 flex items-center gap-1.5">
+                <span>⚙️</span> Sandbox Settlement Simulator
+            </h3>
+            <span class="badge badge-indigo text-[9px] font-black py-2">DEVELOPER TOOL</span>
+        </div>
+
+        <div class="space-y-4">
+            <!-- Processing Stage Button -->
+            <div class="bg-base-300/40 p-4 rounded-2xl border border-base-200/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+                <div class="space-y-0.5">
+                    <span class="block text-xs font-black text-white">1. Initiate Paystack Processing</span>
+                    <span class="block text-[10px] text-base-content/50 font-semibold">Prepares payout transaction and creates unique transfer code.</span>
+                </div>
+                <button type="button" onclick="triggerProcessPayout()" id="btn-process" 
+                        class="w-full sm:w-auto btn btn-xs md:btn-sm btn-primary font-black rounded-lg active:scale-95 transition-all
+                        {% if wr.status != 'PENDING' %}btn-disabled{% endif %}">
+                    Process Payout
+                </button>
+            </div>
+
+            <!-- Settlement Decision Grid -->
+            <div class="bg-base-300/40 p-4 rounded-2xl border border-base-200/50 space-y-3">
+                <div class="space-y-0.5">
+                    <span class="block text-xs font-black text-white">2. Simulate Clearing Network Decision</span>
+                    <span class="block text-[10px] text-base-content/50 font-semibold">Deliver simulated bank success or failure webhook directly to server.</span>
+                </div>
+                
+                <div class="grid grid-cols-2 gap-3 pt-1">
+                    <!-- Settle Success -->
+                    <button type="button" onclick="triggerSettlePayout('success')" id="btn-settle-success" 
+                            class="btn btn-sm bg-emerald-500/10 hover:bg-emerald-500 border border-emerald-500/25 hover:border-emerald-500 text-emerald-400 hover:text-slate-950 font-black rounded-xl active:scale-95 transition-all
+                            {% if wr.status == 'COMPLETED' or wr.status == 'FAILED' %}btn-disabled{% endif %}">
+                        Simulate Bank Success GHS
+                    </button>
+                    <!-- Settle Fail / Refund -->
+                    <button type="button" onclick="triggerSettlePayout('failed')" id="btn-settle-failed" 
+                            class="btn btn-sm bg-error/10 hover:bg-error border border-error/25 hover:border-error text-error hover:text-white font-black rounded-xl active:scale-95 transition-all
+                            {% if wr.status == 'COMPLETED' or wr.status == 'FAILED' %}btn-disabled{% endif %}">
+                        Simulate Rejection (Refund)
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function triggerProcessPayout() {
+        const btn = document.getElementById('btn-process');
+        btn.classList.add('loading');
+        
+        fetch("{% url 'wallet:withdraw_simulate_process' wr.id %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            btn.classList.remove('loading');
+            if (data.ok) {
+                // Immediately refresh HTMX container
+                htmx.trigger('#tracker-outer', 'load');
+                btn.classList.add('btn-disabled');
+            } else {
+                alert("Processing failed: " + data.message);
+            }
+        })
+        .catch(err => {
+            btn.classList.remove('loading');
+            alert("Error: " + err);
+        });
+    }
+
+    function triggerSettlePayout(statusType) {
+        const btnSuccess = document.getElementById('btn-settle-success');
+        const btnFailed = document.getElementById('btn-settle-failed');
+        
+        if (statusType === 'success') {
+            btnSuccess.classList.add('loading');
+        } else {
+            btnFailed.classList.add('loading');
+        }
+
+        // First check if processed, if not auto-process it first for ease of use!
+        const wrStatus = "{{ wr.status }}";
+        const hasTransferCode = {% if wr.transfer_code %}true{% else %}false{% endif %};
+        
+        if (!hasTransferCode) {
+            // Auto-process first
+            fetch("{% url 'wallet:withdraw_simulate_process' wr.id %}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.ok) {
+                    dispatchSettleCall(statusType);
+                } else {
+                    btnSuccess.classList.remove('loading');
+                    btnFailed.classList.remove('loading');
+                    alert("Could not auto-process: " + data.message);
+                }
+            });
+        } else {
+            dispatchSettleCall(statusType);
+        }
+    }
+
+    function dispatchSettleCall(statusType) {
+        const btnSuccess = document.getElementById('btn-settle-success');
+        const btnFailed = document.getElementById('btn-settle-failed');
+
+        fetch("{% url 'wallet:withdraw_simulate_settle' wr.id %}?status=" + statusType, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            btnSuccess.classList.remove('loading');
+            btnFailed.classList.remove('loading');
+            if (data.ok) {
+                // Instantly refresh the timeline UI
+                htmx.trigger('#tracker-outer', 'load');
+                btnSuccess.classList.add('btn-disabled');
+                btnFailed.classList.add('btn-disabled');
+                
+                // Disable process button too
+                const procBtn = document.getElementById('btn-process');
+                if (procBtn) procBtn.classList.add('btn-disabled');
+            } else {
+                alert("Settlement failed: " + data.message);
+            }
+        })
+        .catch(err => {
+            btnSuccess.classList.remove('loading');
+            btnFailed.classList.remove('loading');
+            alert("Error settling: " + err);
+        });
+    }
+</script>
+{% endblock %}

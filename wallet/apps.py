@@ -1,10 +1,10 @@
 from django.apps import AppConfig
 
 
-class BettingConfig(AppConfig):
+class WalletConfig(AppConfig):
     default_auto_field = 'django.db.models.BigAutoField'
-    name = 'betting'
+    name = 'wallet'
 
     def ready(self):
-        import betting.signals
+        import wallet.signals
 

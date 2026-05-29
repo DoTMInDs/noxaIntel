@@ -1,35 +1,48 @@
 {% if matches %}
     {% regroup matches by league as league_list %}
-    <div class="space-y-6">
+    <div class="space-y-5">
         {% for league_group in league_list %}
-            <div class="space-y-3">
+            <div class="space-y-2">
+
                 <!-- League Header -->
-                <div class="flex items-center gap-2 px-1 text-xs font-bold uppercase tracking-wider text-base-content/70">
+                <div class="flex items-center gap-2 px-1">
                     {% if league_group.grouper.logo_url %}
-                        <img src="{{ league_group.grouper.logo_url }}" class="w-4 h-4 object-contain rounded" alt="{{ league_group.grouper.name }}" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'">
-                        <span class="opacity-60" style="display:none">⚽</span>
+                        <img src="{{ league_group.grouper.logo_url }}"
+                             class="w-4 h-4 object-contain rounded flex-shrink-0"
+                             alt="{{ league_group.grouper.name }}"
+                             onerror="this.style.display='none';this.nextElementSibling.style.display='inline'">
+                        <span class="opacity-50" style="display:none">⚽</span>
                     {% else %}
-                        <span class="opacity-60">⚽</span>
+                        <span class="opacity-50 text-xs">⚽</span>
                     {% endif %}
-                    <span>{{ league_group.grouper.name }}</span>
-                    <span class="opacity-40 font-normal text-[10px]">· {{ league_group.grouper.country }}</span>
+                    <span class="text-[10px] font-black uppercase tracking-widest text-base-content/60 truncate">
+                        {{ league_group.grouper.name }}
+                    </span>
+                    <span class="text-[9px] opacity-35 font-semibold flex-shrink-0">
+                        · {{ league_group.grouper.country }}
+                    </span>
+                    <span class="ml-auto text-[9px] opacity-30 font-bold flex-shrink-0">
+                        {{ league_group.list|length }} match{{ league_group.list|length|pluralize:"es" }}
+                    </span>
                 </div>
 
-                <!-- Matches List -->
-                <div class="flex flex-col gap-3">
+                <!-- Match Cards -->
+                <div class="flex flex-col gap-2">
                     {% for match in league_group.list %}
                         {% include 'matches/partials/match_card.html' with match=match %}
                     {% endfor %}
                 </div>
+
             </div>
         {% endfor %}
     </div>
+
 {% else %}
-    <div class="card bg-base-100 border border-base-200 p-12 text-center text-base-content/60 shadow-sm rounded-2xl">
-        <span class="text-5xl mb-3">📅</span>
-        <h4 class="font-bold text-lg">No fixtures found</h4>
-        <p class="text-sm opacity-60 max-w-md mx-auto mt-1">
-            There are no matches of style "{{ filter_type }}" matching the selected criteria in our pipeline right now.
+    <div class="glass-panel border border-base-200/40 rounded-2xl p-10 text-center">
+        <span class="text-4xl block mb-3">📅</span>
+        <h4 class="font-bold text-base text-base-content/70">No fixtures found</h4>
+        <p class="text-xs opacity-40 max-w-xs mx-auto mt-1.5">
+            No matches of type <strong>{{ filter_type }}</strong> match the selected criteria right now.
         </p>
     </div>
 {% endif %}

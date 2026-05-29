@@ -1,0 +1,112 @@
+<div id="tracker-container" class="space-y-6">
+    <!-- Main Payout Status Card -->
+    <div class="bg-base-200/50 p-5 rounded-2xl border border-base-200/50 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 relative overflow-hidden">
+        <div class="space-y-1 relative z-10">
+            <span class="text-[10px] font-black uppercase tracking-wider text-base-content/40">Withdrawal Transaction ID</span>
+            <div class="flex items-center gap-2">
+                <span class="text-sm font-black text-base-content/90">{{ wr.transaction.reference }}</span>
+            </div>
+            <p class="text-xs text-base-content/60 font-semibold mt-0.5">To: {{ wr.bank_name }} — {{ wr.account_number }} ({{ wr.account_name }})</p>
+        </div>
+
+        <div class="text-left sm:text-right relative z-10">
+            <span class="text-xs font-black uppercase text-base-content/40">Settlement Amount</span>
+            <span class="block text-2xl font-black text-emerald-400">GHS {{ wr.amount }}</span>
+        </div>
+    </div>
+
+    <!-- Live Step Timeline Tracker -->
+    <div class="glass-panel p-6 rounded-3xl border border-base-200/40 relative overflow-hidden space-y-6">
+        <h3 class="text-xs font-black uppercase tracking-wider text-base-content/50 flex items-center justify-between">
+            <span>🔴 Live Settlement Progress</span>
+            <span class="text-[9px] badge badge-outline border-base-content/10 text-base-content/40 font-bold flex items-center gap-1.5 px-2.5 py-2">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span> Real-Time Polling
+            </span>
+        </h3>
+
+        <!-- Interactive Vertical Steps -->
+        <div class="space-y-6 relative pl-8 before:absolute before:left-[15px] before:top-3 before:bottom-3 before:w-[2px] before:bg-base-content/10">
+            <!-- Step 1: Requested -->
+            <div class="relative group">
+                <!-- Outer Node ring -->
+                <div class="absolute -left-[31px] top-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs border-2 bg-base-300 transition-all duration-300
+                    {% if wr.status == 'PENDING' %}border-amber-400 text-amber-400 shadow-md shadow-amber-500/10
+                    {% elif wr.status == 'PROCESSING' or wr.status == 'COMPLETED' %}border-emerald-500 bg-emerald-500/10 text-emerald-400
+                    {% else %}border-emerald-500 bg-emerald-500/10 text-emerald-400{% endif %}">
+                    ✓
+                </div>
+                <div class="pl-3">
+                    <span class="block text-xs font-black tracking-tight text-base-content/95">Payout Request Received</span>
+                    <span class="block text-[10px] text-base-content/50 font-semibold mt-0.5">Your request was atomically registered on NoxaIntel.</span>
+                </div>
+            </div>
+
+            <!-- Step 2: Processing -->
+            <div class="relative group">
+                <div class="absolute -left-[31px] top-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs border-2 bg-base-300 transition-all duration-300
+                    {% if wr.status == 'PENDING' %}border-base-content/10 text-base-content/30
+                    {% elif wr.status == 'PROCESSING' %}border-amber-400 text-amber-400 shadow-md shadow-amber-500/10 animate-pulse
+                    {% elif wr.status == 'COMPLETED' %}border-emerald-500 bg-emerald-500/10 text-emerald-400
+                    {% else %}border-error bg-error/10 text-error{% endif %}">
+                    {% if wr.status == 'COMPLETED' %}✓{% elif wr.status == 'FAILED' %}🛑{% else %}2{% endif %}
+                </div>
+                <div class="pl-3">
+                    <span class="block text-xs font-black tracking-tight 
+                        {% if wr.status == 'PENDING' %}text-base-content/40{% else %}text-base-content/95{% endif %}">
+                        Paystack Gateway Verification
+                    </span>
+                    <span class="block text-[10px] text-base-content/50 font-semibold mt-0.5">
+                        {% if wr.status == 'PENDING' %}Awaiting queue slot...
+                        {% elif wr.status == 'PROCESSING' %}Dispatched recipient token and transfer parameters. Processing...
+                        {% elif wr.status == 'COMPLETED' %}Paystack secure ledger validation successful.
+                        {% else %}Gateway returned a settlement exception: {{ wr.failure_reason|default:"Rejection by bank" }}.{% endif %}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Step 3: Settled -->
+            <div class="relative group">
+                <div class="absolute -left-[31px] top-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs border-2 bg-base-300 transition-all duration-300
+                    {% if wr.status == 'PENDING' or wr.status == 'PROCESSING' %}border-base-content/10 text-base-content/30
+                    {% elif wr.status == 'COMPLETED' %}border-emerald-500 bg-emerald-500/10 text-emerald-400 shadow-lg shadow-emerald-500/10
+                    {% else %}border-error bg-error/10 text-error{% endif %}">
+                    {% if wr.status == 'COMPLETED' %}✓{% elif wr.status == 'FAILED' %}↺{% else %}3{% endif %}
+                </div>
+                <div class="pl-3">
+                    <span class="block text-xs font-black tracking-tight 
+                        {% if wr.status != 'COMPLETED' and wr.status != 'FAILED' %}text-base-content/40{% elif wr.status == 'COMPLETED' %}text-emerald-400{% else %}text-error{% endif %}">
+                        {% if wr.status == 'FAILED' %}Payout Refunded{% else %}Payout Settled Successfully{% endif %}
+                    </span>
+                    <span class="block text-[10px] text-base-content/50 font-semibold mt-0.5">
+                        {% if wr.status == 'PENDING' or wr.status == 'PROCESSING' %}Awaiting final clearing from commercial banking systems...
+                        {% elif wr.status == 'COMPLETED' %}Funds successfully credited to your {{ wr.bank_name }} account!
+                        {% else %}Funds automatically and atomically refunded back to your NoxaIntel wallet balance!{% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Celebration/Finish Panel -->
+    {% if wr.status == 'COMPLETED' or wr.status == 'FAILED' %}
+        <div class="bg-base-200/50 p-6 rounded-3xl border border-base-200/50 flex flex-col items-center justify-center text-center space-y-4 shadow-xl animate-fade-in">
+            {% if wr.status == 'COMPLETED' %}
+                <span class="text-4xl">🎉</span>
+                <div class="space-y-1">
+                    <h4 class="text-base font-black text-emerald-400">Settlement Complete!</h4>
+                    <p class="text-xs text-base-content/60 font-semibold">Your funds are now available in your mobile money or bank account.</p>
+                </div>
+            {% else %}
+                <span class="text-4xl">🛡️</span>
+                <div class="space-y-1">
+                    <h4 class="text-base font-black text-error">Transaction Refunded!</h4>
+                    <p class="text-xs text-base-content/60 font-semibold">Due to banking rejection, GHS {{ wr.amount }} has been fully refunded to your wallet ledger.</p>
+                </div>
+            {% endif %}
+            
+            <a href="{% url 'wallet:overview' %}" class="btn btn-sm btn-outline border-base-content/20 hover:bg-base-content/5 px-6 rounded-xl font-bold active:scale-95 transition-all">
+                Return to Wallet Overview
+            </a>
+        </div>
+    {% endif %}
+</div>

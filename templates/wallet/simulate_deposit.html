@@ -1,0 +1,362 @@
+{% extends "base.html" %}
+
+{% block title %}Paystack Checkout (Sandbox) — NoxaIntel{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto space-y-6">
+    <!-- Sandbox Header Warning -->
+    <div class="bg-amber-500/10 border border-amber-500/20 px-4 py-3 rounded-2xl flex gap-3 text-xs items-center text-amber-400">
+        <span class="text-base">🛠️</span>
+        <div class="font-semibold">
+            <span class="font-extrabold uppercase">Paystack Sandbox Gateway:</span> This is a mock payment simulation page. Do NOT enter real credit card numbers or credentials.
+        </div>
+    </div>
+
+    <!-- Main Payment Widget Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl relative">
+        <!-- Accent Glow -->
+        <div class="absolute -right-24 -top-24 w-48 h-48 rounded-full bg-emerald-500/5 blur-3xl"></div>
+
+        <!-- LEFT PANEL: Merchant Details & Methods -->
+        <div class="md:col-span-1 bg-slate-950 p-6 border-b md:border-b-0 md:border-r border-slate-800 flex flex-col justify-between space-y-6">
+            <div class="space-y-4">
+                <!-- Merchant Header -->
+                <div class="space-y-1">
+                    <span class="text-[9px] uppercase font-black text-slate-500 tracking-wider">Merchant</span>
+                    <h2 class="text-sm font-black text-white flex items-center gap-1.5">
+                        <span class="text-emerald-400">⚡</span> NoxaIntel Platform
+                    </h2>
+                </div>
+
+                <div class="space-y-1">
+                    <span class="text-[9px] uppercase font-black text-slate-500 tracking-wider">Reference</span>
+                    <p class="text-[10px] font-mono text-slate-400 font-bold select-all">{{ tx.reference }}</p>
+                </div>
+
+                <!-- Channels Menu -->
+                <div class="space-y-2 pt-2">
+                    <span class="text-[9px] uppercase font-black text-slate-500 tracking-wider block">Pay With</span>
+                    <button type="button" onclick="selectChannel('momo')" id="btn-chan-momo" 
+                            class="w-full flex items-center justify-between p-2.5 rounded-xl border border-slate-700 bg-slate-900 text-xs font-bold text-white transition-all">
+                        <span>📱 Mobile Money</span>
+                        <span class="text-[10px] text-emerald-400">●</span>
+                    </button>
+                    <button type="button" onclick="selectChannel('card')" id="btn-chan-card" 
+                            class="w-full flex items-center justify-between p-2.5 rounded-xl border border-slate-800 bg-slate-950/40 text-xs font-bold text-slate-400 opacity-60 hover:opacity-100 transition-all">
+                        <span>💳 Visa / Mastercard</span>
+                        <span class="text-[10px] text-slate-600">○</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Amount Block -->
+            <div class="bg-slate-900/60 p-4 rounded-2xl border border-slate-800">
+                <span class="text-[9px] uppercase font-black text-slate-500 tracking-wider block">Amount due</span>
+                <span class="text-2xl font-black text-emerald-400 tracking-tight">GHS {{ tx.amount }}</span>
+            </div>
+        </div>
+
+        <!-- RIGHT PANEL: Channel Forms & Simulation -->
+        <div class="md:col-span-2 p-6 md:p-8 flex flex-col justify-center min-h-[300px] relative">
+            
+            <!-- FORM A: MOBILE MONEY -->
+            <div id="form-momo" class="space-y-6">
+                <h3 class="text-sm font-black text-white uppercase tracking-wider">Mobile Money Sandbox</h3>
+                
+                <!-- Operator Select Buttons -->
+                <div class="grid grid-cols-3 gap-2.5">
+                    <button onclick="setSimMomo('MTN', this)" class="sim-momo-card border border-[#FFCC00]/30 bg-[#FFCC00]/10 p-2.5 rounded-xl flex flex-col items-center select-none active:scale-95 transition-all text-center">
+                        <svg class="w-8 h-8 rounded-lg bg-[#FFCC00] p-0.5" viewBox="0 0 100 100" fill="none">
+                            <ellipse cx="50" cy="50" rx="36" ry="22" fill="#FFCC00" stroke="#003366" stroke-width="7"/>
+                            <text x="50" y="58" font-family="Arial, sans-serif" font-weight="900" font-size="22" fill="#003366" text-anchor="middle">MTN</text>
+                        </svg>
+                        <span class="text-[9px] text-white font-bold mt-1.5">MTN MoMo</span>
+                    </button>
+                    <button onclick="setSimMomo('VDF', this)" class="sim-momo-card border border-slate-800 bg-slate-950/40 p-2.5 rounded-xl flex flex-col items-center select-none active:scale-95 transition-all text-center">
+                        <svg class="w-8 h-8 rounded-lg bg-[#E60000] p-1" viewBox="0 0 100 100" fill="none">
+                            <circle cx="50" cy="50" r="30" stroke="white" stroke-width="5"/>
+                            <circle cx="50" cy="50" r="18" fill="white"/>
+                            <path d="M44 42 H56 V62 C56 65 50 67 50 67" stroke="#E60000" stroke-width="5" fill="none"/>
+                        </svg>
+                        <span class="text-[9px] text-slate-400 font-bold mt-1.5">Telecel</span>
+                    </button>
+                    <button onclick="setSimMomo('ATL', this)" class="sim-momo-card border border-slate-800 bg-slate-950/40 p-2.5 rounded-xl flex flex-col items-center select-none active:scale-95 transition-all text-center">
+                        <svg class="w-8 h-8 rounded-lg bg-[#00A59A] p-1" viewBox="0 0 100 100" fill="none">
+                            <text x="50" y="58" font-family="Arial, sans-serif" font-weight="900" font-size="34" fill="white" text-anchor="middle">at</text>
+                            <circle cx="50" cy="50" r="30" stroke="white" stroke-width="3" stroke-dasharray="16 6"/>
+                        </svg>
+                        <span class="text-[9px] text-slate-400 font-bold mt-1.5">AT Money</span>
+                    </button>
+                </div>
+
+                <div class="form-control space-y-1">
+                    <label class="label font-bold text-xs uppercase tracking-wider text-slate-400">Mobile Phone Number</label>
+                    <input type="text" id="sim-phone" value="0241234567" class="input input-bordered w-full font-bold bg-slate-950 border-slate-800 text-white focus:border-emerald-400 focus:outline-none rounded-xl" />
+                </div>
+
+                <button onclick="initiateDepositSimulation()" class="btn w-full border-0 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black rounded-xl shadow-lg shadow-emerald-500/10 active:scale-95 transition-all">
+                    Pay GHS {{ tx.amount }}
+                </button>
+            </div>
+
+            <!-- FORM B: VISA / MASTERCARD -->
+            <div id="form-card" class="space-y-6 hidden">
+                <h3 class="text-sm font-black text-white uppercase tracking-wider">Debit Card Sandbox</h3>
+                
+                <div class="form-control space-y-1">
+                    <label class="label font-bold text-xs uppercase tracking-wider text-slate-400">Card Number</label>
+                    <input type="text" value="4000 1234 5678 9010" class="input input-bordered w-full font-mono font-bold bg-slate-950 border-slate-800 text-white rounded-xl focus:outline-none" disabled />
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="form-control space-y-1">
+                        <label class="label font-bold text-[10px] uppercase tracking-wider text-slate-400">Expiry Date</label>
+                        <input type="text" value="12/28" class="input input-bordered w-full text-center font-bold bg-slate-950 border-slate-800 text-white rounded-xl focus:outline-none" disabled />
+                    </div>
+                    <div class="form-control space-y-1">
+                        <label class="label font-bold text-[10px] uppercase tracking-wider text-slate-400">CVV</label>
+                        <input type="text" value="999" class="input input-bordered w-full text-center font-bold bg-slate-950 border-slate-800 text-white rounded-xl focus:outline-none" disabled />
+                    </div>
+                </div>
+
+                <button onclick="initiateCardSimulation()" class="btn w-full border-0 bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-black rounded-xl active:scale-95 transition-all">
+                    Pay GHS {{ tx.amount }}
+                </button>
+            </div>
+
+            <!-- LOADER PANEL (Simulating real-time timeline steps) -->
+            <div id="loader-panel" class="absolute inset-0 bg-slate-900 z-20 p-6 md:p-8 flex flex-col justify-center items-center text-center space-y-6 hidden rounded-r-3xl">
+                <!-- Large Spinner -->
+                <span class="loading loading-ring loading-lg text-emerald-400 scale-125"></span>
+                
+                <div class="space-y-1.5 max-w-xs">
+                    <h4 id="loader-title" class="text-sm font-black text-white uppercase tracking-wider">Securing Connection</h4>
+                    <p id="loader-desc" class="text-[10px] font-semibold text-slate-400 leading-relaxed">Initializing sandbox Paystack API socket connection...</p>
+                </div>
+
+                <!-- Custom Step indicators -->
+                <div class="flex items-center gap-1.5">
+                    <div id="dot-1" class="w-2 h-2 rounded-full bg-emerald-400 shadow-md shadow-emerald-400/20"></div>
+                    <div id="dot-2" class="w-2 h-2 rounded-full bg-slate-700"></div>
+                    <div id="dot-3" class="w-2 h-2 rounded-full bg-slate-700"></div>
+                    <div id="dot-4" class="w-2 h-2 rounded-full bg-slate-700"></div>
+                </div>
+            </div>
+
+            <!-- SIMULATED MOBILE DIALOG PHONE DIALOG SCREEN (USSD/PIN Prompt Overlay) -->
+            <div id="ussd-overlay" class="absolute inset-0 bg-slate-950/90 z-30 p-6 flex items-center justify-center hidden rounded-r-3xl">
+                <div class="bg-[#1A1A1A] w-full max-w-[280px] rounded-2xl border border-slate-800 p-5 shadow-2xl space-y-4 text-center">
+                    <div class="flex items-center justify-center gap-2 text-[#FFCC00]" id="ussd-header-accent">
+                        <span class="text-lg">📱</span>
+                        <span class="text-xs font-black uppercase tracking-wider" id="ussd-title">MTN Mobile Money</span>
+                    </div>
+
+                    <div class="space-y-1 text-slate-300 text-xs font-bold leading-normal">
+                        <p>Authorize deposit of</p>
+                        <p class="text-sm font-black text-white">GHS {{ tx.amount }}</p>
+                        <p>to NoxaIntel Platform?</p>
+                    </div>
+
+                    <div class="form-control space-y-1">
+                        <input type="password" maxlength="4" placeholder="Enter 4-Digit Wallet PIN" id="ussd-pin-input"
+                               class="input input-sm w-full text-center font-black tracking-widest bg-black border-slate-800 text-white rounded-lg focus:border-[#FFCC00] focus:outline-none" />
+                        <span class="text-[8px] text-slate-500 font-semibold mt-0.5">Use any 4 numbers for testing.</span>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2 pt-2">
+                        <button type="button" onclick="cancelUSSDPrompt()" class="btn btn-sm btn-ghost text-slate-400 hover:text-white font-bold text-[10px] rounded-lg">
+                            Cancel
+                        </button>
+                        <button type="button" onclick="approveUSSDPrompt()" class="btn btn-sm border-0 bg-[#FFCC00] hover:bg-[#EBAE3C] text-black font-black text-[10px] rounded-lg">
+                            Authorize
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SUCCESS PANEL -->
+            <div id="success-panel" class="absolute inset-0 bg-slate-900 z-40 p-6 md:p-8 flex flex-col justify-center items-center text-center space-y-4 hidden rounded-r-3xl animate-fade-in">
+                <div class="w-16 h-16 rounded-full bg-emerald-500/10 border-2 border-emerald-400 flex items-center justify-center text-3xl text-emerald-400 shadow-xl shadow-emerald-500/15 animate-bounce">
+                    ✓
+                </div>
+                <div class="space-y-1">
+                    <h4 class="text-base font-black text-emerald-400 uppercase tracking-wider">Deposit Approved!</h4>
+                    <p class="text-xs text-slate-400 font-semibold">Programmatic charge.success webhook successfully delivered.</p>
+                    <p class="text-[10px] text-slate-500 font-semibold mt-0.5">Redirecting back to your wallet overview...</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    let selectedSimMomo = 'MTN';
+
+    function selectChannel(chan) {
+        const btnMomo = document.getElementById('btn-chan-momo');
+        const btnCard = document.getElementById('btn-chan-card');
+        const formMomo = document.getElementById('form-momo');
+        const formCard = document.getElementById('form-card');
+
+        if (chan === 'momo') {
+            btnMomo.classList.add('border-slate-700', 'bg-slate-900', 'text-white');
+            btnMomo.classList.remove('border-slate-800', 'bg-slate-950/40', 'text-slate-400');
+            btnCard.classList.remove('border-slate-700', 'bg-slate-900', 'text-white');
+            btnCard.classList.add('border-slate-800', 'bg-slate-950/40', 'text-slate-400');
+            formMomo.classList.remove('hidden');
+            formCard.classList.add('hidden');
+        } else {
+            btnCard.classList.add('border-slate-700', 'bg-slate-900', 'text-white');
+            btnCard.classList.remove('border-slate-800', 'bg-slate-950/40', 'text-slate-400');
+            btnMomo.classList.remove('border-slate-700', 'bg-slate-900', 'text-white');
+            btnMomo.classList.add('border-slate-800', 'bg-slate-950/40', 'text-slate-400');
+            formCard.classList.remove('hidden');
+            formMomo.classList.add('hidden');
+        }
+    }
+
+    function setSimMomo(code, btnElement) {
+        selectedSimMomo = code;
+        document.querySelectorAll('.sim-momo-card').forEach(btn => {
+            btn.classList.remove('border-[#FFCC00]/30', 'bg-[#FFCC00]/10', 'border-[#E60000]/30', 'bg-[#E60000]/10', 'border-[#00A59A]/30', 'bg-[#00A59A]/10');
+            btn.classList.add('border-slate-800', 'bg-slate-950/40');
+        });
+
+        btnElement.classList.remove('border-slate-800', 'bg-slate-950/40');
+        if (code === 'MTN') {
+            btnElement.classList.add('border-[#FFCC00]/30', 'bg-[#FFCC00]/10');
+        } else if (code === 'VDF') {
+            btnElement.classList.add('border-[#E60000]/30', 'bg-[#E60000]/10');
+        } else if (code === 'ATL') {
+            btnElement.classList.add('border-[#00A59A]/30', 'bg-[#00A59A]/10');
+        }
+    }
+
+    // Step-by-Step Simulation timeline trigger
+    function initiateDepositSimulation() {
+        const loader = document.getElementById('loader-panel');
+        loader.classList.remove('hidden');
+
+        // Transition timeline
+        runTimelineStep('Securing Gateway', 'Initializing sandbox Paystack API socket connection...', 1, () => {
+            // Step 2: Show USSD PIN prompt Overlay
+            loader.classList.add('hidden');
+            setupUSSDPromptOverlay();
+        });
+    }
+
+    function setupUSSDPromptOverlay() {
+        const overlay = document.getElementById('ussd-overlay');
+        const title = document.getElementById('ussd-title');
+        const headerAccent = document.getElementById('ussd-header-accent');
+        const pin = document.getElementById('ussd-pin-input');
+        
+        pin.value = ''; // Clear PIN
+        overlay.classList.remove('hidden');
+
+        // Update brand values in USSD modal
+        if (selectedSimMomo === 'MTN') {
+            title.textContent = 'MTN Mobile Money';
+            headerAccent.style.color = '#FFCC00';
+            pin.style.borderColor = '#FFCC00';
+        } else if (selectedSimMomo === 'VDF') {
+            title.textContent = 'Telecel Cash';
+            headerAccent.style.color = '#E60000';
+            pin.style.borderColor = '#E60000';
+        } else if (selectedSimMomo === 'ATL') {
+            title.textContent = 'AT Money';
+            headerAccent.style.color = '#00A59A';
+            pin.style.borderColor = '#00A59A';
+        }
+    }
+
+    function cancelUSSDPrompt() {
+        document.getElementById('ussd-overlay').classList.add('hidden');
+        document.getElementById('loader-panel').classList.add('hidden');
+    }
+
+    function approveUSSDPrompt() {
+        const pin = document.getElementById('ussd-pin-input').value;
+        if (pin.length < 4) {
+            alert('Please enter a 4-digit PIN to proceed.');
+            return;
+        }
+
+        // Hide overlay, reload loader panel at Step 3
+        document.getElementById('ussd-overlay').classList.add('hidden');
+        const loader = document.getElementById('loader-panel');
+        loader.classList.remove('hidden');
+
+        runTimelineStep('Validating PIN Code', 'Checking user network authorization credentials...', 3, () => {
+            runTimelineStep('Dispatching Webhook', 'Sending secure GHS credit webhook to NoxaIntel server...', 4, () => {
+                // Call backend view to dispatch actual webhook
+                triggerWebhookInBackend();
+            });
+        });
+    }
+
+    function triggerWebhookInBackend() {
+        fetch("{% url 'wallet:deposit_simulate_approve' tx.reference %}", {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.ok) {
+                // Show Success checkmark
+                document.getElementById('loader-panel').classList.add('hidden');
+                document.getElementById('success-panel').classList.remove('hidden');
+                
+                setTimeout(() => {
+                    window.location.href = "{% url 'wallet:overview' %}";
+                }, 2200);
+            } else {
+                alert("Simulated Webhook delivery failed: " + data.message);
+                cancelUSSDPrompt();
+            }
+        })
+        .catch(err => {
+            alert("Error in mock approval: " + err);
+            cancelUSSDPrompt();
+        });
+    }
+
+    function initiateCardSimulation() {
+        const loader = document.getElementById('loader-panel');
+        loader.classList.remove('hidden');
+
+        runTimelineStep('Securing Gateway', 'Initializing sandbox Paystack API socket connection...', 1, () => {
+            runTimelineStep('3D-Secure Validation', 'Verifying bank security token and checking OTP prompt...', 2, () => {
+                runTimelineStep('Authorizing Wager Ledger', 'Clearing credit card transactional funds...', 3, () => {
+                    runTimelineStep('Dispatching Webhook', 'Sending secure GHS credit webhook to NoxaIntel server...', 4, () => {
+                        triggerWebhookInBackend();
+                    });
+                });
+            });
+        });
+    }
+
+    // Timeline stepper logic
+    function runTimelineStep(title, desc, stepNum, callback) {
+        document.getElementById('loader-title').textContent = title;
+        document.getElementById('loader-desc').textContent = desc;
+
+        // Colors for dots
+        for (let i = 1; i <= 4; i++) {
+            const dot = document.getElementById(`dot-${i}`);
+            if (i <= stepNum) {
+                dot.className = 'w-2 h-2 rounded-full bg-emerald-400 shadow-md shadow-emerald-400/20';
+            } else {
+                dot.className = 'w-2 h-2 rounded-full bg-slate-700';
+            }
+        }
+
+        // Delay for simulation realism (1000 - 1500 ms)
+        const delay = stepNum === 1 ? 900 : 1300;
+        setTimeout(callback, delay);
+    }
+</script>
+{% endblock %}

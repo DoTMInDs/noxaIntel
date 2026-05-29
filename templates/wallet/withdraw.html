@@ -1,0 +1,283 @@
+{% extends "base.html" %}
+
+{% block title %}NoxaIntel — Request Payout{% endblock %}
+
+{% block content %}
+<div class="max-w-md mx-auto space-y-6">
+    <!-- Breadcrumb Header -->
+    <div class="flex items-center justify-between pb-2 border-b border-base-200/50">
+        <div>
+            <h1 class="text-xl font-black tracking-tight">📤 Request Payout</h1>
+            <p class="text-xs text-base-content/60 mt-0.5">Transfer GHS funds seamlessly via Mobile Money or Bank Transfer.</p>
+        </div>
+        <a href="{% url 'wallet:overview' %}" class="btn btn-xs btn-ghost gap-1 opacity-60 hover:opacity-100 font-bold">
+            ← Cancel
+        </a>
+    </div>
+
+    <!-- Payout form container -->
+    <div class="glass-panel rounded-3xl border border-base-200/40 p-6 md:p-8 space-y-6 shadow-xl relative overflow-hidden">
+        <div class="absolute -left-16 -bottom-16 w-32 h-32 rounded-full bg-emerald-500/5 blur-3xl"></div>
+
+        <form action="{% url 'wallet:withdraw' %}" method="post" class="space-y-5" id="withdraw_form">
+            {% csrf_token %}
+            
+            <!-- Hidden Payout Type and Provider Values -->
+            <input type="hidden" name="payout_type" id="payout_type_input" value="MOBILE_MONEY" />
+            <input type="hidden" name="momo_code" id="momo_code_input" value="" />
+            <input type="hidden" name="momo_bank_name" id="momo_bank_name_input" value="" />
+
+            <!-- Balance snap -->
+            <div class="bg-base-200/30 px-4 py-3 rounded-2xl border border-base-200/50 flex justify-between items-center text-xs">
+                <span class="font-extrabold text-base-content/50">Available Balance:</span>
+                <span class="font-black text-emerald-400 text-sm">GHS {{ wallet.balance }}</span>
+            </div>
+
+            <!-- Segmented Control Tabs (MoMo vs Bank) -->
+            <div class="tabs tabs-boxed bg-base-200/60 p-1.5 rounded-2xl grid grid-cols-2 text-center border border-base-200/30">
+                <button type="button" id="tab-momo" onclick="switchPayoutTab('MOBILE_MONEY')" 
+                        class="tab tab-active font-black text-xs rounded-xl transition-all duration-200">
+                    📱 Mobile Money
+                </button>
+                <button type="button" id="tab-bank" onclick="switchPayoutTab('BANK')" 
+                        class="tab font-black text-xs rounded-xl transition-all duration-200">
+                    🏛️ Bank Transfer
+                </button>
+            </div>
+
+            <!-- CONTAINER A: MOBILE MONEY -->
+            <div id="momo-container" class="space-y-5 transition-all duration-300">
+                <!-- Gorgeous Interactive Operator Cards Grid -->
+                <div class="space-y-2">
+                    <label class="label font-bold text-xs uppercase tracking-wider text-base-content/75">
+                        Select MoMo Operator
+                    </label>
+                    <div class="grid grid-cols-3 gap-3">
+                        <!-- MTN MoMo Card -->
+                        <div id="card-MTN" onclick="selectMomo('MTN', 'MTN Mobile Money', this)" 
+                             class="momo-card border-2 border-base-content/10 bg-base-200/40 hover:bg-base-200/60 p-3 rounded-2xl flex flex-col items-center text-center cursor-pointer transition-all duration-200 select-none group relative overflow-hidden">
+                            <div class="absolute -right-8 -top-8 w-16 h-16 rounded-full bg-[#FFCC00]/5 blur-xl group-hover:scale-125 transition-transform"></div>
+                            <svg class="w-12 h-12 rounded-xl bg-[#FFCC00] p-1 shadow-md" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <ellipse cx="50" cy="50" rx="36" ry="22" fill="#FFCC00" stroke="#003366" stroke-width="7"/>
+                                <text x="50" y="58" font-family="Arial, sans-serif" font-weight="900" font-size="22" fill="#003366" text-anchor="middle">MTN</text>
+                            </svg>
+                            <span class="text-[10px] font-black tracking-tight mt-2 text-base-content/70 group-hover:text-base-content">MTN MoMo</span>
+                        </div>
+
+                        <!-- Telecel Cash Card -->
+                        <div id="card-VDF" onclick="selectMomo('VDF', 'Telecel Cash', this)" 
+                             class="momo-card border-2 border-base-content/10 bg-base-200/40 hover:bg-base-200/60 p-3 rounded-2xl flex flex-col items-center text-center cursor-pointer transition-all duration-200 select-none group relative overflow-hidden">
+                            <div class="absolute -right-8 -top-8 w-16 h-16 rounded-full bg-[#E60000]/5 blur-xl group-hover:scale-125 transition-transform"></div>
+                            <svg class="w-12 h-12 rounded-xl bg-[#E60000] p-1.5 shadow-md" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <circle cx="50" cy="50" r="30" stroke="white" stroke-width="4.5"/>
+                                <circle cx="50" cy="50" r="18" fill="white"/>
+                                <path d="M44 42 H56 V62 C56 65 53 67 50 67 C47 67 44 65 44 62" stroke="#E60000" stroke-width="5" fill="none"/>
+                            </svg>
+                            <span class="text-[10px] font-black tracking-tight mt-2 text-base-content/70 group-hover:text-base-content">Telecel Cash</span>
+                        </div>
+
+                        <!-- AT Money Card -->
+                        <div id="card-ATL" onclick="selectMomo('ATL', 'AT Money', this)" 
+                             class="momo-card border-2 border-base-content/10 bg-base-200/40 hover:bg-base-200/60 p-3 rounded-2xl flex flex-col items-center text-center cursor-pointer transition-all duration-200 select-none group relative overflow-hidden">
+                            <div class="absolute -right-8 -top-8 w-16 h-16 rounded-full bg-[#00A59A]/5 blur-xl group-hover:scale-125 transition-transform"></div>
+                            <svg class="w-12 h-12 rounded-xl bg-[#00A59A] p-2 shadow-md" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <text x="50" y="58" font-family="Arial, sans-serif" font-weight="900" font-size="34" fill="white" text-anchor="middle">at</text>
+                                <circle cx="50" cy="50" r="30" stroke="white" stroke-width="3" stroke-dasharray="16 6"/>
+                            </svg>
+                            <span class="text-[10px] font-black tracking-tight mt-2 text-base-content/70 group-hover:text-base-content">AT Money</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- MoMo Mobile Number -->
+                <div class="form-control w-full space-y-1">
+                    <label class="label font-bold text-xs uppercase tracking-wider text-base-content/75">
+                        Mobile Phone Number
+                    </label>
+                    <input type="text" 
+                           id="momo_account_number_input"
+                           name="momo_account_number" 
+                           required 
+                           pattern="0[235][0-9]{8}"
+                           placeholder="e.g. 055XXXXXXX" 
+                           hx-get="{% url 'wallet:verify_account' %}"
+                           hx-trigger="keyup changed delay:800ms"
+                           hx-target="#account_verification_result"
+                           hx-include="[name='momo_code']"
+                           class="input input-bordered w-full font-bold bg-base-200/50 border-base-content/10 focus:border-primary text-base-content focus:outline-none rounded-xl" />
+                    <div class="label">
+                        <span class="label-text-alt text-[9px] text-base-content/40 font-semibold">Enter a valid 10-digit GHS mobile money number starting with 0.</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CONTAINER B: BANK TRANSFER -->
+            <div id="bank-container" class="space-y-5 hidden transition-all duration-300">
+                <!-- Select Bank Dropdown -->
+                <div class="form-control w-full space-y-1">
+                    <label class="label font-bold text-xs uppercase tracking-wider text-base-content/75">
+                        Select Commercial Bank
+                    </label>
+                    <div hx-get="{% url 'wallet:banks' %}?type=bank" hx-trigger="load" hx-swap="outerHTML">
+                        <select class="select select-bordered w-full font-semibold bg-base-200/50 border-base-content/10 focus:outline-none rounded-xl" disabled>
+                            <option>Loading Commercial Banks...</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Bank Account Number -->
+                <div class="form-control w-full space-y-1">
+                    <label class="label font-bold text-xs uppercase tracking-wider text-base-content/75">
+                        Bank Account Number
+                    </label>
+                    <input type="text" 
+                           id="bank_account_number_input"
+                           name="bank_account_number" 
+                           placeholder="e.g. 1029384756" 
+                           hx-get="{% url 'wallet:verify_account' %}"
+                           hx-trigger="keyup changed delay:800ms"
+                           hx-target="#account_verification_result"
+                           hx-include="[name='bank_code']"
+                           class="input input-bordered w-full font-bold bg-base-200/50 border-base-content/10 focus:border-primary text-base-content focus:outline-none rounded-xl" />
+                </div>
+            </div>
+
+            <!-- Dynamic Account verification container -->
+            <div id="account_verification_result" class="min-h-[20px] transition-all duration-300">
+                <!-- Dynamic account resolution renders here -->
+            </div>
+
+            <!-- Payout Amount -->
+            <div class="form-control w-full space-y-1">
+                <label class="label font-bold text-xs uppercase tracking-wider text-base-content/75">
+                    Payout Amount (GHS)
+                </label>
+                <div class="relative flex items-center">
+                    <span class="absolute left-4 text-base font-black text-emerald-400">GH₵</span>
+                    <input type="number" 
+                           name="amount" 
+                           step="0.01" 
+                           min="3" 
+                           max="{{ wallet.balance }}"
+                           placeholder="0.00" 
+                           required 
+                           class="input input-bordered w-full pl-14 font-black text-base text-base-content bg-base-200/50 border-base-content/10 focus:border-emerald-400 focus:outline-none rounded-xl" />
+                </div>
+                <div class="label flex justify-between text-[10px] text-base-content/40 font-semibold">
+                    <span>Min: GHS 3.00</span>
+                    <span>Max: GHS {{ wallet.balance }}</span>
+                </div>
+            </div>
+
+            <!-- Safety caution -->
+            <div class="bg-error/5 p-4 rounded-2xl border border-error/15 flex gap-3 text-[10px] items-start text-base-content/70">
+                <span class="text-base text-error">⚠️</span>
+                <div class="space-y-0.5 leading-relaxed font-semibold">
+                    <p class="font-extrabold text-error">Important Payout Notice</p>
+                    <p>Withdrawals are settled atomically to your wallet balance. Standard transactions settle within 10 minutes, but can occasionally take up to 24 hours during network reviews.</p>
+                </div>
+            </div>
+
+            <!-- Submit payout CTA -->
+            <button type="submit" class="btn btn-md w-full border-0 bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-500 hover:to-teal-500 text-slate-950 font-black rounded-xl shadow-lg active:scale-95 transition-all duration-150 mt-2">
+                🔒 Request Payout
+            </button>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Tab controller
+    function switchPayoutTab(type) {
+        const tabMomo = document.getElementById('tab-momo');
+        const tabBank = document.getElementById('tab-bank');
+        const momoContainer = document.getElementById('momo-container');
+        const bankContainer = document.getElementById('bank-container');
+        const payoutTypeInput = document.getElementById('payout_type_input');
+
+        // Form fields to enable/disable
+        const momoCode = document.getElementById('momo_code_input');
+        const momoAccount = document.getElementById('momo_account_number_input');
+        const bankSelector = document.getElementById('bank_selector');
+        const bankAccount = document.getElementById('bank_account_number_input');
+
+        // Reset account verification result container
+        document.getElementById('account_verification_result').innerHTML = '';
+
+        if (type === 'MOBILE_MONEY') {
+            tabMomo.classList.add('tab-active');
+            tabBank.classList.remove('tab-active');
+            momoContainer.classList.remove('hidden');
+            bankContainer.classList.add('hidden');
+            payoutTypeInput.value = 'MOBILE_MONEY';
+
+            // Toggle fields
+            momoCode.disabled = false;
+            momoAccount.disabled = false;
+            momoAccount.required = true;
+
+            if (bankSelector) bankSelector.disabled = true;
+            bankAccount.disabled = true;
+            bankAccount.required = false;
+        } else {
+            tabBank.classList.add('tab-active');
+            tabMomo.classList.remove('tab-active');
+            bankContainer.classList.remove('hidden');
+            momoContainer.classList.add('hidden');
+            payoutTypeInput.value = 'BANK';
+
+            // Toggle fields
+            momoCode.disabled = true;
+            momoAccount.disabled = true;
+            momoAccount.required = false;
+
+            if (bankSelector) {
+                bankSelector.disabled = false;
+                bankSelector.required = true;
+            }
+            bankAccount.disabled = false;
+            bankAccount.required = true;
+        }
+    }
+
+    // MoMo Interactive Selection
+    function selectMomo(code, name, element) {
+        document.getElementById('momo_code_input').value = code;
+        document.getElementById('momo_bank_name_input').value = name;
+
+        // Clear all active outlines
+        document.querySelectorAll('.momo-card').forEach(card => {
+            card.classList.remove(
+                'border-[#FFCC00]', 'bg-[#FFCC00]/10', 'shadow-md', 'shadow-[#FFCC00]/5',
+                'border-[#E60000]', 'bg-[#E60000]/10', 'shadow-[#E60000]/5',
+                'border-[#00A59A]', 'bg-[#00A59A]/10', 'shadow-[#00A59A]/5'
+            );
+        });
+
+        // Add brand-specific visual highlights
+        if (code === 'MTN') {
+            element.classList.add('border-[#FFCC00]', 'bg-[#FFCC00]/10', 'shadow-md', 'shadow-[#FFCC00]/5');
+        } else if (code === 'VDF') {
+            element.classList.add('border-[#E60000]', 'bg-[#E60000]/10', 'shadow-md', 'shadow-[#E60000]/5');
+        } else if (code === 'ATL') {
+            element.classList.add('border-[#00A59A]', 'bg-[#00A59A]/10', 'shadow-md', 'shadow-[#00A59A]/5');
+        }
+
+        // Trigger dynamic account verification if phone number has been typed
+        const momoAccountVal = document.getElementById('momo_account_number_input').value;
+        if (momoAccountVal.length >= 8) {
+            // Re-trigger htmx verification
+            htmx.trigger('#momo_account_number_input', 'keyup');
+        }
+    }
+
+    // Initial setup: activate MTN by default and disable bank inputs
+    window.addEventListener('DOMContentLoaded', () => {
+        const mtnCard = document.getElementById('card-MTN');
+        if (mtnCard) {
+            selectMomo('MTN', 'MTN Mobile Money', mtnCard);
+        }
+        switchPayoutTab('MOBILE_MONEY');
+    });
+</script>
+{% endblock %}
