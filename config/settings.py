@@ -41,6 +41,7 @@ _ngrok = env('NGROK_URL', default='')
 CSRF_TRUSTED_ORIGINS = [
     'http://localhost:8000',
     'http://127.0.0.1:8000',
+    'https://noxaintel.onrender.com'
 ]
 if _ngrok:
     CSRF_TRUSTED_ORIGINS.append(_ngrok.rstrip('/'))
