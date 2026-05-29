@@ -1,0 +1,43 @@
+<form hx-post="{% url 'users:profile' %}" hx-swap="outerHTML" hx-target="#profile-form-container" class="space-y-4">
+    {% csrf_token %}
+    
+    {% if form.non_field_errors %}
+        <div class="alert alert-error shadow-sm rounded-xl py-3">
+            <span class="text-xs">{{ form.non_field_errors.0 }}</span>
+        </div>
+    {% endif %}
+
+    {% for field in form %}
+        <div class="form-control w-full">
+            {% if field.field.widget.input_type == 'checkbox' or 'toggle' in field.field.widget.attrs.class %}
+                <label class="label cursor-pointer justify-between bg-base-200 hover:bg-base-300/50 p-3.5 rounded-xl border border-base-300 transition-all duration-150">
+                    <div class="flex flex-col">
+                        <span class="label-text font-bold text-sm text-base-content">{{ field.label }}</span>
+                        {% if field.help_text %}
+                            <span class="label-text-alt opacity-50 mt-0.5">{{ field.help_text }}</span>
+                        {% endif %}
+                    </div>
+                    {{ field }}
+                </label>
+            {% else %}
+                <label class="label py-1">
+                    <span class="label-text font-bold text-sm opacity-75">{{ field.label }}</span>
+                </label>
+                {{ field }}
+                {% if field.help_text %}
+                    <span class="label-text-alt opacity-40 px-1 mt-1">{{ field.help_text }}</span>
+                {% endif %}
+            {% endif %}
+            
+            {% if field.errors %}
+                <label class="label py-0">
+                    <span class="label-text-alt text-error font-medium">{{ field.errors.0 }}</span>
+                </label>
+            {% endif %}
+        </div>
+    {% endfor %}
+
+    <button type="submit" class="btn btn-primary btn-sm w-full font-bold shadow-md shadow-primary/10 mt-2">
+        Save Preferences
+    </button>
+</form>

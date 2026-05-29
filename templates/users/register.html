@@ -1,0 +1,71 @@
+{% extends 'base.html' %}
+
+{% block title %}Sign Up - NoxaIntel AI Betting{% endblock %}
+
+{% block content %}
+<div class="flex flex-1 items-center justify-center min-h-[75vh] py-8">
+    <div class="card w-full max-w-md shadow-2xl glass-panel border border-white/5 rounded-2xl overflow-hidden">
+        <div class="card-body p-8 space-y-6">
+            <!-- Header -->
+            <div class="text-center space-y-2">
+                <span class="text-5xl">📊</span>
+                <h2 class="text-3xl font-extrabold bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent tracking-tight mt-3">
+                    Get Started
+                </h2>
+                <p class="text-sm opacity-60">Unlock neural network insights and tactical verdicts</p>
+            </div>
+
+            <!-- Form -->
+            <form method="post" action="{% url 'users:register' %}" class="space-y-4">
+                {% csrf_token %}
+                
+                {% if form.non_field_errors %}
+                    <div class="alert alert-error shadow-sm rounded-xl py-3">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm">{{ form.non_field_errors.0 }}</span>
+                        </div>
+                    </div>
+                {% endif %}
+
+                {% for field in form %}
+                    <div class="form-control w-full space-y-1">
+                        <label class="label py-1">
+                            <span class="label-text font-semibold opacity-75">{{ field.label }}</span>
+                        </label>
+                        {{ field }}
+                        {% if field.errors %}
+                            <label class="label py-0">
+                                <span class="label-text-alt text-error font-medium">{{ field.errors.0 }}</span>
+                            </label>
+                        {% endif %}
+                        {% if field.help_text %}
+                            <label class="label py-0">
+                                <span class="label-text-alt opacity-40 text-xs">{{ field.help_text|safe }}</span>
+                            </label>
+                        {% endif %}
+                    </div>
+                {% endfor %}
+
+                <button type="submit" class="btn btn-primary w-full mt-4 font-bold text-base shadow-lg shadow-primary/20">
+                    Register Account
+                </button>
+            </form>
+
+            <!-- Bottom Redirect -->
+            <div class="text-center pt-4 border-t border-white/5">
+                <p class="text-sm opacity-60">
+                    Already registered? 
+                    <a href="{% url 'users:login' %}" class="link link-primary font-semibold">Sign In instead</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Dynamically style form fields to match DaisyUI theme
+    document.querySelectorAll('form input[type="text"], form input[type="email"], form input[type="password"]').forEach(input => {
+        input.classList.add('input', 'input-bordered', 'w-full', 'bg-base-300/40', 'focus:border-primary');
+    });
+</script>
+{% endblock %}

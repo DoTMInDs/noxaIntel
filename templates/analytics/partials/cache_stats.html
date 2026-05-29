@@ -1,0 +1,61 @@
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+    <!-- Prediction Partial Cache Panel -->
+    <div class="card bg-base-200 border border-base-300 p-5 rounded-2xl shadow-sm space-y-4">
+        <div class="flex justify-between items-center">
+            <h4 class="font-extrabold text-sm text-base-content">Prediction Cache (Partial View)</h4>
+            <span class="badge badge-accent badge-xs">Active</span>
+        </div>
+        
+        <div class="grid grid-cols-3 gap-2 text-center text-xs">
+            <div class="bg-base-100 p-2.5 rounded-xl">
+                <p class="opacity-50 text-[10px]">Hits (Live)</p>
+                <p class="font-bold text-success text-sm mt-0.5">{{ pred_live.hits|default:0 }}</p>
+            </div>
+            <div class="bg-base-100 p-2.5 rounded-xl">
+                <p class="opacity-50 text-[10px]">Misses (Live)</p>
+                <p class="font-bold text-error text-sm mt-0.5">{{ pred_live.misses|default:0 }}</p>
+            </div>
+            <div class="bg-base-100 p-2.5 rounded-xl">
+                <p class="opacity-50 text-[10px]">Hit Ratio (Live)</p>
+                <p class="font-bold text-primary text-sm mt-0.5">
+                    {% if pred_live.ratio %}{{ pred_live.ratio }}%{% else %}-{% endif %}
+                </p>
+            </div>
+        </div>
+
+        <div class="text-[10px] opacity-40 flex justify-between pt-1 border-t border-base-300">
+            <span>Last DB Consolidation:</span>
+            <span class="font-semibold">{{ pred_db.hit_ratio|default:"0.00" }}% ({{ pred_db.recorded_at|date:"H:i:s" }})</span>
+        </div>
+    </div>
+
+    <!-- Tips Filter Cache Panel -->
+    <div class="card bg-base-200 border border-base-300 p-5 rounded-2xl shadow-sm space-y-4">
+        <div class="flex justify-between items-center">
+            <h4 class="font-extrabold text-sm text-base-content">Betting Tips Cache (Filters)</h4>
+            <span class="badge badge-accent badge-xs">Active</span>
+        </div>
+
+        <div class="grid grid-cols-3 gap-2 text-center text-xs">
+            <div class="bg-base-100 p-2.5 rounded-xl">
+                <p class="opacity-50 text-[10px]">Hits (Live)</p>
+                <p class="font-bold text-success text-sm mt-0.5">{{ tips_live.hits|default:0 }}</p>
+            </div>
+            <div class="bg-base-100 p-2.5 rounded-xl">
+                <p class="opacity-50 text-[10px]">Misses (Live)</p>
+                <p class="font-bold text-error text-sm mt-0.5">{{ tips_live.misses|default:0 }}</p>
+            </div>
+            <div class="bg-base-100 p-2.5 rounded-xl">
+                <p class="opacity-50 text-[10px]">Hit Ratio (Live)</p>
+                <p class="font-bold text-primary text-sm mt-0.5">
+                    {% if tips_live.ratio %}{{ tips_live.ratio }}%{% else %}-{% endif %}
+                </p>
+            </div>
+        </div>
+
+        <div class="text-[10px] opacity-40 flex justify-between pt-1 border-t border-base-300">
+            <span>Last DB Consolidation:</span>
+            <span class="font-semibold">{{ tips_db.hit_ratio|default:"0.00" }}% ({{ tips_db.recorded_at|date:"H:i:s" }})</span>
+        </div>
+    </div>
+</div>

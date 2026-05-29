@@ -1,0 +1,240 @@
+{% extends 'base.html' %}
+
+{% block title %}System Analytics - NoxaIntel{% endblock %}
+
+{% block extra_head %}
+<!-- Chart.js CDN -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="space-y-8 max-w-6xl mx-auto">
+    <!-- Header -->
+    <div class="flex justify-between items-center pb-2 border-b border-base-200">
+        <div>
+            <h1 class="text-3xl font-extrabold tracking-tight">AI Systems Analytics</h1>
+            <p class="text-sm opacity-60">Real-time stats on neural models accuracy, ROI margins, and Redis cache efficiency.</p>
+        </div>
+        <span class="badge badge-accent font-bold">Admin Console</span>
+    </div>
+
+    <!-- Summary KPIs Grid -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        <!-- Avg Accuracy -->
+        <div class="card bg-base-100 border border-base-200 shadow-lg p-5 flex flex-row items-center justify-between">
+            <div class="space-y-1">
+                <p class="text-xs opacity-50 uppercase font-bold tracking-wider">Model Accuracy</p>
+                <p class="text-3xl font-black text-emerald-400">{{ avg_accuracy }}%</p>
+                <p class="text-[9px] opacity-40">Rolling 3-model average</p>
+            </div>
+            <span class="text-3xl">🎯</span>
+        </div>
+
+        <!-- Avg ROI -->
+        <div class="card bg-base-100 border border-base-200 shadow-lg p-5 flex flex-row items-center justify-between">
+            <div class="space-y-1">
+                <p class="text-xs opacity-50 uppercase font-bold tracking-wider">ROI Margin</p>
+                <p class="text-3xl font-black text-cyan-400">+{{ avg_roi }}%</p>
+                <p class="text-[9px] opacity-40">Return on tip odds</p>
+            </div>
+            <span class="text-3xl">📈</span>
+        </div>
+
+        <!-- Pred Cache Consolidate -->
+        <div class="card bg-base-100 border border-base-200 shadow-lg p-5 flex flex-row items-center justify-between">
+            <div class="space-y-1">
+                <p class="text-xs opacity-50 uppercase font-bold tracking-wider">Pred Cache Ratio</p>
+                <p class="text-3xl font-black text-base-content">{{ pred_cache.hit_ratio|default:"0.00" }}%</p>
+                <p class="text-[9px] opacity-40">Saved queries ratio</p>
+            </div>
+            <span class="text-3xl">💾</span>
+        </div>
+
+        <!-- Tips Cache Consolidate -->
+        <div class="card bg-base-100 border border-base-200 shadow-lg p-5 flex flex-row items-center justify-between">
+            <div class="space-y-1">
+                <p class="text-xs opacity-50 uppercase font-bold tracking-wider">Tips Cache Ratio</p>
+                <p class="text-3xl font-black text-base-content">{{ tips_cache.hit_ratio|default:"0.00" }}%</p>
+                <p class="text-[9px] opacity-40">Filter responses ratio</p>
+            </div>
+            <span class="text-3xl">⚡</span>
+        </div>
+    </div>
+
+    <!-- Live Caching Stats (HTMX Polled) -->
+    <div class="space-y-3">
+        <div class="flex justify-between items-center">
+            <h3 class="font-bold text-lg text-primary">Live Redis Caching (Polling every 10s)</h3>
+            <span class="loading loading-ring loading-xs text-primary htmx-indicator" id="live-indicator"></span>
+        </div>
+        <div id="cache-stats-container"
+             hx-get="{% url 'analytics:cache_stats' %}"
+             hx-trigger="load, every 10s"
+             hx-target="this"
+             hx-indicator="#live-indicator">
+            <!-- Loaded via HTMX -->
+        </div>
+    </div>
+
+    <!-- Chart Block -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div class="card bg-base-100 border border-base-200 shadow-xl p-5 space-y-4">
+            <h3 class="font-bold text-base text-primary">Model Predictions Trend</h3>
+            <div class="relative h-64 w-full">
+                <canvas id="accuracyChart"></canvas>
+            </div>
+        </div>
+        <div class="card bg-base-100 border border-base-200 shadow-xl p-5 space-y-4">
+            <h3 class="font-bold text-base text-primary">ROI Projection Ratio (%)</h3>
+            <div class="relative h-64 w-full">
+                <canvas id="roiChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tables Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Model accuracy records -->
+        <div class="card bg-base-100 border border-base-200 shadow-xl overflow-hidden">
+            <div class="p-5 border-b border-base-200 bg-base-200/20">
+                <h4 class="font-bold text-sm text-primary">Model Accuracy Records</h4>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="table table-zebra table-sm w-full text-xs">
+                    <thead>
+                        <tr>
+                            <th>Model</th>
+                            <th>Total</th>
+                            <th>Correct</th>
+                            <th>Accuracy</th>
+                            <th>ROI</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for report in accuracy_reports|slice:":8" %}
+                            <tr>
+                                <td class="font-bold">{{ report.model_name }}</td>
+                                <td>{{ report.total_predictions }}</td>
+                                <td>{{ report.correct_predictions }}</td>
+                                <td class="text-success font-semibold">{{ report.accuracy_percentage }}%</td>
+                                <td class="text-info font-semibold">+{{ report.roi_percentage }}%</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Cache Consolidation logs -->
+        <div class="card bg-base-100 border border-base-200 shadow-xl overflow-hidden">
+            <div class="p-5 border-b border-base-200 bg-base-200/20">
+                <h4 class="font-bold text-sm text-primary">Consolidated Cache Records</h4>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="table table-zebra table-sm w-full text-xs">
+                    <thead>
+                        <tr>
+                            <th>Endpoint</th>
+                            <th>Hits</th>
+                            <th>Misses</th>
+                            <th>Ratio</th>
+                            <th>Timestamp</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for metric in cache_metrics|slice:":8" %}
+                            <tr>
+                                <td class="font-bold">{{ metric.endpoint_name }}</td>
+                                <td>{{ metric.cache_hits }}</td>
+                                <td>{{ metric.cache_misses }}</td>
+                                <td class="font-bold text-accent">{{ metric.hit_ratio }}%</td>
+                                <td class="opacity-50">{{ metric.recorded_at|date:"m-d H:i:s" }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Initialize chart contexts
+    const accCtx = document.getElementById('accuracyChart').getContext('2d');
+    const roiCtx = document.getElementById('roiChart').getContext('2d');
+
+    // Labels & Data templates generated by Django loop (reverse lists to display chronologically)
+    const labels = [
+        {% for report in accuracy_reports|dictsort:"recorded_at" %}
+            "{{ report.recorded_at|date:'m-d H:i' }}",
+        {% endfor %}
+    ];
+
+    const accuracyData = [
+        {% for report in accuracy_reports|dictsort:"recorded_at" %}
+            {{ report.accuracy_percentage }},
+        {% endfor %}
+    ];
+
+    const roiData = [
+        {% for report in accuracy_reports|dictsort:"recorded_at" %}
+            {{ report.roi_percentage }},
+        {% endfor %}
+    ];
+
+    // Chart.js Configuration
+    const chartOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+            y: {
+                grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                ticks: { color: 'rgba(255, 255, 255, 0.5)' }
+            },
+            x: {
+                grid: { display: false },
+                ticks: { color: 'rgba(255, 255, 255, 0.5)' }
+            }
+        },
+        plugins: {
+            legend: { display: false }
+        }
+    };
+
+    // Render Accuracy Chart
+    new Chart(accCtx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: accuracyData,
+                borderColor: '#34d399', // Emerald-400
+                backgroundColor: 'rgba(52, 211, 153, 0.1)',
+                borderWidth: 2,
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: chartOptions
+    });
+
+    // Render ROI Chart
+    new Chart(roiCtx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: roiData,
+                borderColor: '#22d3ee', // Cyan-400
+                backgroundColor: 'rgba(34, 211, 238, 0.1)',
+                borderWidth: 2,
+                tension: 0.4,
+                fill: true
+            }]
+        },
+        options: chartOptions
+    });
+</script>
+{% endblock %}

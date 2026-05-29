@@ -1,0 +1,784 @@
+{% extends 'base.html' %}
+
+{% block title %}AI Tactical Assistant - NoxaIntel{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ───────────────────────────────────────────
+     NATIVE APP SHELL — overrides base layout
+  ─────────────────────────────────────────── */
+  /* Push main padding reset so we can own the full viewport */
+  main.va-shell-main {
+    padding: 0 !important;
+    overflow: hidden !important;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+  }
+
+  /* ── App Shell ── */
+  #va-shell {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    width: 100%;
+    max-width: 680px;
+    margin: 0 auto;
+    background: #0d1117;
+    position: relative;
+    overflow: hidden;
+  }
+
+  /* ── Top Bar ── */
+  #va-topbar {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 16px;
+    background: rgba(13, 17, 23, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    z-index: 10;
+  }
+
+  .va-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #7c3aed, #4f46e5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    box-shadow: 0 0 12px rgba(124,58,237,0.5);
+    flex-shrink: 0;
+  }
+
+  .va-title-block h1 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #f0f6ff;
+    margin: 0;
+    line-height: 1.2;
+  }
+
+  .va-title-block span {
+    font-size: 11px;
+    color: #4ade80;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .va-online-dot {
+    width: 6px;
+    height: 6px;
+    background: #4ade80;
+    border-radius: 50%;
+    animation: blink-dot 2s ease-in-out infinite;
+  }
+
+  @keyframes blink-dot {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  /* Topbar icon buttons */
+  .va-icon-btn {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s;
+    color: #94a3b8;
+    flex-shrink: 0;
+  }
+
+  .va-icon-btn:hover, .va-icon-btn.active {
+    background: rgba(124,58,237,0.25);
+    color: #a78bfa;
+  }
+
+  /* ── Messages Scroll Area ── */
+  #va-messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 12px 8px;
+    scroll-behavior: smooth;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #va-messages::-webkit-scrollbar { width: 0; }
+
+  /* ── Chat Bubbles ── */
+  .va-bubble-row {
+    display: flex;
+    margin-bottom: 10px;
+    align-items: flex-end;
+    gap: 8px;
+    animation: msg-in 0.22s cubic-bezier(0.34,1.56,0.64,1) both;
+  }
+
+  @keyframes msg-in {
+    from { opacity: 0; transform: translateY(12px) scale(0.96); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  .va-bubble-row.user-row { flex-direction: row-reverse; }
+
+  .va-mini-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+  }
+
+  .va-mini-avatar.ai { background: linear-gradient(135deg, #7c3aed, #4f46e5); }
+  .va-mini-avatar.user { background: linear-gradient(135deg, #0ea5e9, #2563eb); }
+
+  .va-bubble {
+    max-width: 78%;
+    padding: 10px 14px;
+    border-radius: 20px;
+    font-size: 14px;
+    line-height: 1.55;
+    word-break: break-word;
+  }
+
+  .va-bubble.ai-bubble {
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-bottom-left-radius: 6px;
+    color: #e2e8f0;
+  }
+
+  .va-bubble.user-bubble {
+    background: linear-gradient(135deg, #7c3aed, #4f46e5);
+    border-bottom-right-radius: 6px;
+    color: #fff;
+    box-shadow: 0 4px 16px rgba(124,58,237,0.35);
+  }
+
+  .va-bubble ul {
+    list-style: none;
+    margin: 8px 0 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+  }
+
+  .va-bubble ul li::before { content: "→ "; opacity: 0.6; }
+
+  /* Timestamp */
+  .va-time {
+    font-size: 10px;
+    color: rgba(255,255,255,0.3);
+    margin-top: 4px;
+    text-align: right;
+  }
+
+  .user-row .va-time { text-align: left; }
+
+  /* ── Loading Indicator ── */
+  #va-loading {
+    display: none;
+    padding: 8px 12px 0;
+  }
+
+  .va-typing-bubble {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.08);
+    padding: 10px 16px;
+    border-radius: 20px;
+    border-bottom-left-radius: 6px;
+  }
+
+  .va-typing-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #7c3aed;
+    animation: typing-bounce 1.2s ease-in-out infinite both;
+  }
+
+  .va-typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .va-typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes typing-bounce {
+    0%, 80%, 100% { transform: translateY(0); opacity: 0.4; }
+    40% { transform: translateY(-6px); opacity: 1; }
+  }
+
+  /* ── Listening Banner ── */
+  #va-listening-bar {
+    display: none;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 16px;
+    background: rgba(124,58,237,0.12);
+    border-top: 1px solid rgba(124,58,237,0.25);
+  }
+
+  #va-listening-bar.visible { display: flex; }
+
+  .va-wave {
+    display: flex;
+    align-items: center;
+    gap: 3px;
+    height: 18px;
+  }
+
+  .va-wave-bar {
+    width: 3px;
+    background: #a78bfa;
+    border-radius: 2px;
+    animation: wave-bar 0.7s ease-in-out infinite alternate;
+  }
+
+  .va-wave-bar:nth-child(1) { height: 5px;  animation-delay: 0s; }
+  .va-wave-bar:nth-child(2) { height: 12px; animation-delay: 0.1s; }
+  .va-wave-bar:nth-child(3) { height: 18px; animation-delay: 0.2s; }
+  .va-wave-bar:nth-child(4) { height: 10px; animation-delay: 0.3s; }
+  .va-wave-bar:nth-child(5) { height: 14px; animation-delay: 0.4s; }
+  .va-wave-bar:nth-child(6) { height: 7px;  animation-delay: 0.5s; }
+  .va-wave-bar:nth-child(7) { height: 16px; animation-delay: 0.15s; }
+
+  @keyframes wave-bar {
+    0%   { transform: scaleY(0.4); }
+    100% { transform: scaleY(1.8); }
+  }
+
+  /* ── Bottom Bar ── */
+  #va-bottombar {
+    flex-shrink: 0;
+    background: rgba(13, 17, 23, 0.96);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid rgba(255,255,255,0.07);
+    padding: 10px 12px 10px;
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+  }
+
+  /* Quick suggestions row */
+  #va-suggestions {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 8px;
+    scrollbar-width: none;
+  }
+
+  #va-suggestions::-webkit-scrollbar { display: none; }
+
+  .va-chip {
+    flex-shrink: 0;
+    padding: 5px 12px;
+    border-radius: 999px;
+    border: 1px solid rgba(124,58,237,0.4);
+    background: rgba(124,58,237,0.1);
+    color: #a78bfa;
+    font-size: 12px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.15s, transform 0.1s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .va-chip:active { background: rgba(124,58,237,0.3); transform: scale(0.96); }
+
+  /* Input row */
+  .va-input-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  #chat-input-field {
+    flex: 1;
+    background: rgba(255,255,255,0.07);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 24px;
+    padding: 11px 18px;
+    font-size: 14px;
+    color: #f0f6ff;
+    outline: none;
+    transition: border-color 0.2s;
+    min-width: 0;
+  }
+
+  #chat-input-field::placeholder { color: rgba(255,255,255,0.3); }
+  #chat-input-field:focus { border-color: rgba(124,58,237,0.6); }
+
+  /* Send button */
+  #va-send-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #7c3aed, #4f46e5);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: transform 0.1s, box-shadow 0.15s;
+    box-shadow: 0 4px 14px rgba(124,58,237,0.4);
+    color: #fff;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  #va-send-btn:active { transform: scale(0.92); }
+
+  /* Mic button — centrepiece */
+  #mic-btn {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #7c3aed, #6d28d9);
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: transform 0.12s, box-shadow 0.15s;
+    box-shadow: 0 4px 20px rgba(124,58,237,0.5);
+    color: #fff;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  #mic-btn:active, #mic-btn.recording {
+    transform: scale(0.94);
+    box-shadow: 0 0 0 10px rgba(124,58,237,0.18), 0 4px 20px rgba(124,58,237,0.5);
+  }
+
+  #mic-btn.recording {
+    background: linear-gradient(135deg, #dc2626, #b91c1c);
+    box-shadow: 0 0 0 12px rgba(220,38,38,0.18), 0 4px 20px rgba(220,38,38,0.5);
+    animation: mic-pulse 1.2s ease-in-out infinite;
+  }
+
+  @keyframes mic-pulse {
+    0%,100% { box-shadow: 0 0 0 10px rgba(220,38,38,0.15), 0 4px 20px rgba(220,38,38,0.5); }
+    50%      { box-shadow: 0 0 0 18px rgba(220,38,38,0.05), 0 4px 20px rgba(220,38,38,0.5); }
+  }
+
+  /* Settings drawer */
+  #va-settings-drawer {
+    display: none;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 4px 4px;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    margin-top: 8px;
+  }
+
+  #va-settings-drawer.open { display: flex; }
+
+  .va-setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    font-size: 13px;
+    color: #94a3b8;
+  }
+
+  /* Toggle pill */
+  .va-toggle {
+    position: relative;
+    width: 38px;
+    height: 22px;
+  }
+
+  .va-toggle input { opacity: 0; width: 0; height: 0; }
+
+  .va-toggle-slider {
+    position: absolute;
+    inset: 0;
+    background: rgba(255,255,255,0.12);
+    border-radius: 999px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .va-toggle-slider::before {
+    content: '';
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    left: 3px;
+    top: 3px;
+    background: #fff;
+    border-radius: 50%;
+    transition: transform 0.2s;
+  }
+
+  .va-toggle input:checked + .va-toggle-slider { background: #7c3aed; }
+  .va-toggle input:checked + .va-toggle-slider::before { transform: translateX(16px); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div id="va-shell">
+
+  <!-- ── Top Bar ── -->
+  <div id="va-topbar">
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="va-avatar">⚡</div>
+      <div class="va-title-block">
+        <h1>NoxaIntel AI</h1>
+        <span><span class="va-online-dot"></span>Tactical Assistant · Active</span>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <!-- Settings toggle -->
+      <button class="va-icon-btn" id="settings-btn" title="Settings" onclick="toggleSettings()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Message Feed ── -->
+  <div id="va-messages">
+
+    <!-- AI Greeting bubble -->
+    <div class="va-bubble-row ai-row">
+      <div class="va-mini-avatar ai">⚡</div>
+      <div>
+        <div class="va-bubble ai-bubble">
+          Hey {{ user.username|capfirst }} 👋 — I'm your AI Tactical Assistant.<br><br>
+          Hold the <strong>mic</strong> button to speak, or type below. Try asking:
+          <ul>
+            <li>"What are the safest bets today?"</li>
+            <li>"Analyse Chelsea vs Liverpool"</li>
+            <li>"Show live matches"</li>
+            <li>"High-confidence tips for tonight"</li>
+          </ul>
+        </div>
+        <div class="va-time">NoxaIntel AI · Just now</div>
+      </div>
+    </div>
+
+    <!-- History from server -->
+    {% for msg in history %}
+      {% if msg.sender == 'user' %}
+        <div class="va-bubble-row user-row">
+          <div class="va-mini-avatar user">{{ user.username|slice:":1"|upper }}</div>
+          <div>
+            <div class="va-bubble user-bubble">{{ msg.text }}</div>
+            <div class="va-time">You</div>
+          </div>
+        </div>
+      {% else %}
+        <div class="va-bubble-row ai-row">
+          <div class="va-mini-avatar ai">⚡</div>
+          <div>
+            <div class="va-bubble ai-bubble">{{ msg.text|linebreaksbr }}</div>
+            <div class="va-time">NoxaIntel AI</div>
+          </div>
+        </div>
+      {% endif %}
+    {% endfor %}
+
+  </div><!-- /va-messages -->
+
+  <!-- ── HTMX Typing Loader ── -->
+  <div id="va-loading" class="htmx-indicator" style="display:none;padding:0 20px 8px;">
+    <div style="display:flex;align-items:flex-end;gap:8px;">
+      <div class="va-mini-avatar ai">⚡</div>
+      <div class="va-typing-bubble">
+        <div class="va-typing-dot"></div>
+        <div class="va-typing-dot"></div>
+        <div class="va-typing-dot"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Listening Status Banner ── -->
+  <div id="va-listening-bar">
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div class="va-wave">
+        <div class="va-wave-bar"></div><div class="va-wave-bar"></div>
+        <div class="va-wave-bar"></div><div class="va-wave-bar"></div>
+        <div class="va-wave-bar"></div><div class="va-wave-bar"></div>
+        <div class="va-wave-bar"></div>
+      </div>
+      <span id="va-listen-label" style="font-size:12px;font-weight:600;color:#a78bfa;letter-spacing:.04em;">LISTENING…</span>
+    </div>
+    <span style="font-size:11px;color:rgba(167,139,250,0.6);">Release mic to send</span>
+  </div>
+
+  <!-- ── Bottom Bar ── -->
+  <div id="va-bottombar">
+
+    <!-- Suggestions row -->
+    <div id="va-suggestions">
+      <button class="va-chip" onclick="fillSuggestion('Show me safe bets today')">🟢 Safe Bets</button>
+      <button class="va-chip" onclick="fillSuggestion('List upcoming matches')">📅 Upcoming</button>
+      <button class="va-chip" onclick="fillSuggestion('Give me VIP tactical insight')">👑 VIP Tips</button>
+      <button class="va-chip" onclick="fillSuggestion('Analyse live matches now')">🔴 Live Now</button>
+    </div>
+
+    <!-- Input row -->
+    <form id="chat-form"
+          hx-post="{% url 'ai_engine:query_partial' %}"
+          hx-target="#va-messages"
+          hx-swap="beforeend"
+          hx-indicator="#va-loading"
+          hx-on::after-request="this.reset(); scrollBottom(); showLoading(false);">
+      {% csrf_token %}
+      <div class="va-input-row">
+        <!-- Mic -->
+        <button type="button" id="mic-btn" title="Hold to speak">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <rect x="9" y="2" width="6" height="12" rx="3"/>
+            <path d="M5 10a7 7 0 0 0 14 0M12 19v3M8 22h8"/>
+          </svg>
+        </button>
+
+        <!-- Text input -->
+        <input type="text"
+               id="chat-input-field"
+               name="message"
+               required
+               autocomplete="off"
+               placeholder="Ask me anything…" />
+
+        <!-- Send -->
+        <button type="submit" id="va-send-btn">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M2 21l21-9L2 3v7l15 2-15 2z"/>
+          </svg>
+        </button>
+      </div>
+    </form>
+
+    <!-- Settings Drawer -->
+    <div id="va-settings-drawer">
+      <div class="va-setting-row">
+        <span>🔊 Read answers aloud (TTS)</span>
+        <label class="va-toggle">
+          <input type="checkbox" id="tts-toggle" checked />
+          <span class="va-toggle-slider"></span>
+        </label>
+      </div>
+      <div class="va-setting-row">
+        <span>🎤 "Hey Bet" wake-word</span>
+        <label class="va-toggle">
+          <input type="checkbox" id="wakeword-toggle" onchange="toggleWakeWordListener()" />
+          <span class="va-toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+
+  </div><!-- /va-bottombar -->
+
+</div><!-- /va-shell -->
+
+<!-- Ensure the parent <main> becomes the shell host -->
+<script>
+  (function() {
+    const m = document.querySelector('main');
+    if (m) m.classList.add('va-shell-main');
+  })();
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+  /* ─── DOM refs ─── */
+  const messagesEl   = document.getElementById('va-messages');
+  const chatForm     = document.getElementById('chat-form');
+  const inputField   = document.getElementById('chat-input-field');
+  const micBtn       = document.getElementById('mic-btn');
+  const listeningBar = document.getElementById('va-listening-bar');
+  const listenLabel  = document.getElementById('va-listen-label');
+  const loadingEl    = document.getElementById('va-loading');
+  const ttsToggle    = document.getElementById('tts-toggle');
+  const wakeToggle   = document.getElementById('wakeword-toggle');
+
+  /* ─── Helpers ─── */
+  function scrollBottom() {
+    messagesEl.scrollTo({ top: messagesEl.scrollHeight, behavior: 'smooth' });
+  }
+
+  function showLoading(show) {
+    loadingEl.style.display = show ? 'block' : 'none';
+  }
+
+  function fillSuggestion(text) {
+    inputField.value = text;
+    inputField.focus();
+  }
+
+  function toggleSettings() {
+    const d = document.getElementById('va-settings-drawer');
+    const b = document.getElementById('settings-btn');
+    d.classList.toggle('open');
+    b.classList.toggle('active');
+  }
+
+  window.addEventListener('load', scrollBottom);
+
+  /* ─── HTMX hooks ─── */
+  document.body.addEventListener('htmx:beforeRequest', (e) => {
+    if (e.detail.elt === chatForm) showLoading(true);
+  });
+  document.body.addEventListener('htmx:afterRequest', (e) => {
+    if (e.detail.elt === chatForm) { showLoading(false); scrollBottom(); }
+  });
+
+  /* ─── Speech Recognition ─── */
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let cmdRec  = null;
+  let wakeRec = null;
+  let isCmdOn  = false;
+  let isWakeOn = false;
+
+  if (SR) {
+    /* Command recognizer */
+    cmdRec = new SR();
+    cmdRec.continuous = false;
+    cmdRec.lang = 'en-US';
+    cmdRec.interimResults = false;
+    cmdRec.maxAlternatives = 1;
+
+    cmdRec.onstart = () => {
+      isCmdOn = true;
+      micBtn.classList.add('recording');
+      listeningBar.classList.add('visible');
+      listenLabel.textContent = 'LISTENING…';
+    };
+
+    cmdRec.onresult = (e) => {
+      const t = e.results[0][0].transcript;
+      inputField.value = t;
+      htmx.trigger(chatForm, 'submit');
+    };
+
+    cmdRec.onerror = () => resetMicUI();
+    cmdRec.onend = () => {
+      resetMicUI();
+      if (wakeToggle.checked) startWake();
+    };
+
+    /* Wake-word recognizer */
+    wakeRec = new SR();
+    wakeRec.continuous = false;
+    wakeRec.lang = 'en-US';
+    wakeRec.interimResults = true;
+
+    wakeRec.onresult = (e) => {
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        const t = e.results[i][0].transcript.toLowerCase();
+        if (t.includes('hey bet') || t.includes('hay bet') || t.includes('ay bet')) {
+          beep();
+          wakeRec.abort();
+          setTimeout(() => { try { cmdRec.start(); } catch(_) {} }, 200);
+          break;
+        }
+      }
+    };
+
+    wakeRec.onerror = (e) => {
+      if (e.error !== 'no-speech' && e.error !== 'aborted') console.warn('WakeWord error:', e.error);
+    };
+
+    wakeRec.onend = () => {
+      if (isWakeOn && wakeToggle.checked && !isCmdOn) {
+        try { wakeRec.start(); } catch(_) {}
+      }
+    };
+  } else {
+    micBtn.disabled = true;
+    micBtn.title = 'Speech not supported in this browser';
+  }
+
+  function resetMicUI() {
+    isCmdOn = false;
+    micBtn.classList.remove('recording');
+    listeningBar.classList.remove('visible');
+  }
+
+  function startWake() {
+    if (!wakeRec) return;
+    isWakeOn = true;
+    try { wakeRec.start(); } catch(_) {}
+  }
+
+  function stopWake() {
+    isWakeOn = false;
+    if (wakeRec) wakeRec.abort();
+  }
+
+  window.toggleWakeWordListener = function() {
+    wakeToggle.checked ? startWake() : stopWake();
+  };
+
+  /* ─── Mic push-to-talk (touch + mouse) ─── */
+  function startRec() {
+    if (!cmdRec || isCmdOn) return;
+    if (wakeRec) wakeRec.abort();
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    try { cmdRec.start(); } catch(e) {}
+  }
+
+  function stopRec() {
+    if (cmdRec && isCmdOn) cmdRec.stop();
+  }
+
+  micBtn.addEventListener('mousedown',  (e) => { e.preventDefault(); startRec(); });
+  micBtn.addEventListener('mouseup',    (e) => { e.preventDefault(); stopRec();  });
+  micBtn.addEventListener('mouseleave', ()  => { stopRec(); });
+  micBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startRec(); }, { passive: false });
+  micBtn.addEventListener('touchend',   (e) => { e.preventDefault(); stopRec();  }, { passive: false });
+
+  /* ─── Beep synth ─── */
+  function beep() {
+    try {
+      const ctx = new (window.AudioContext || window.webkitAudioContext)();
+      const osc = ctx.createOscillator();
+      const g   = ctx.createGain();
+      osc.connect(g); g.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587, ctx.currentTime);
+      osc.frequency.setValueAtTime(880, ctx.currentTime + 0.1);
+      g.gain.setValueAtTime(0.08, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+      osc.start(); osc.stop(ctx.currentTime + 0.35);
+    } catch(_) {}
+  }
+
+  /* ─── TTS ─── */
+  window.speakResponse = function(text) {
+    if (!window.speechSynthesis || !ttsToggle.checked) return;
+    window.speechSynthesis.cancel();
+    const u = new SpeechSynthesisUtterance(text);
+    u.rate = 1.05; u.pitch = 1.0;
+    const v = speechSynthesis.getVoices().find(v => v.lang.startsWith('en'));
+    if (v) u.voice = v;
+    window.speechSynthesis.speak(u);
+  };
+</script>
+{% endblock %}

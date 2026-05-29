@@ -1,0 +1,7 @@
+<div hx-get="{% url 'notifications:badge_partial' %}" hx-trigger="every 30s" hx-swap="outerHTML">
+    {% if unread_count > 0 %}
+        <span class="badge badge-error badge-xs absolute top-2 right-2 p-1.5 animate-pulse font-bold">
+            {{ unread_count }}
+        </span>
+    {% endif %}
+</div>

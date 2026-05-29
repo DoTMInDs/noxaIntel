@@ -1,0 +1,218 @@
+{% if user.is_authenticated %}
+<style>
+  /* ── Push Prompt Toast ── */
+  #push-prompt {
+    position: fixed;
+    /* On mobile: above the bottom nav (~60px) + breathing room */
+    bottom: calc(60px + 12px);
+    left: 12px;
+    right: 12px;
+    z-index: 9999;
+
+    display: flex;
+    align-items: center;
+    gap: 12px;
+
+    background: linear-gradient(135deg, rgba(124,58,237,0.18), rgba(79,70,229,0.14));
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(124,58,237,0.35);
+    border-radius: 16px;
+    padding: 12px 14px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.4), 0 0 0 1px rgba(124,58,237,0.1);
+
+    /* Slide-in from bottom */
+    animation: push-slide-in 0.38s cubic-bezier(0.34,1.3,0.64,1) both;
+  }
+
+  /* On tablet/desktop: revert to bottom-right corner */
+  @media (min-width: 768px) {
+    #push-prompt {
+      bottom: 20px;
+      right: 20px;
+      left: auto;
+      width: 340px;
+    }
+  }
+
+  @keyframes push-slide-in {
+    from { opacity: 0; transform: translateY(28px) scale(0.96); }
+    to   { opacity: 1; transform: translateY(0)   scale(1); }
+  }
+
+  .push-prompt-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #7c3aed, #4f46e5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(124,58,237,0.4);
+  }
+
+  .push-prompt-body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .push-prompt-body p {
+    font-size: 12px;
+    line-height: 1.4;
+    color: rgba(255,255,255,0.8);
+    margin: 0 0 8px;
+  }
+
+  .push-prompt-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  #enable-push {
+    flex: 1;
+    padding: 7px 14px;
+    border-radius: 999px;
+    border: none;
+    background: linear-gradient(135deg, #7c3aed, #4f46e5);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.1s, box-shadow 0.15s;
+    box-shadow: 0 3px 10px rgba(124,58,237,0.5);
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  #enable-push:active { transform: scale(0.96); }
+
+  #push-dismiss {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.12);
+    color: rgba(255,255,255,0.5);
+    font-size: 14px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  #push-dismiss:hover { background: rgba(255,255,255,0.15); }
+
+  #push-status {
+    font-size: 11px;
+    font-weight: 600;
+    margin-left: 4px;
+    color: #4ade80;
+  }
+</style>
+
+<div id="push-prompt" role="dialog" aria-label="Enable push notifications">
+  <div class="push-prompt-icon">🔔</div>
+  <div class="push-prompt-body">
+    <p>Enable push notifications for real‑time match alerts.</p>
+    <div class="push-prompt-actions">
+      <button id="enable-push">Enable Alerts</button>
+      <span id="push-status"></span>
+      <button id="push-dismiss" aria-label="Dismiss">✕</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const prompt   = document.getElementById('push-prompt');
+  const enableBtn = document.getElementById('enable-push');
+  const statusEl  = document.getElementById('push-status');
+  const dismissBtn = document.getElementById('push-dismiss');
+
+  // ── Helpers ──
+  function hidePrompt() {
+    prompt.style.transition = 'opacity 0.25s, transform 0.25s';
+    prompt.style.opacity = '0';
+    prompt.style.transform = 'translateY(16px)';
+    setTimeout(() => prompt.remove(), 280);
+  }
+
+  function urlBase64ToUint8Array(b64) {
+    const padding = '='.repeat((4 - b64.length % 4) % 4);
+    const base64  = (b64 + padding).replace(/-/g, '+').replace(/_/g, '/');
+    const raw     = atob(base64);
+    return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
+  }
+
+  // ── Auto-dismiss after 8 s (re-appears when user clicks "Enable Push") ──
+  let autoDismiss = setTimeout(hidePrompt, 8000);
+
+  dismissBtn.addEventListener('click', () => {
+    clearTimeout(autoDismiss);
+    hidePrompt();
+    // Mark dismissed in sessionStorage so it won't re-appear this session
+    sessionStorage.setItem('push-prompt-dismissed', '1');
+  });
+
+  // Don't show if already dismissed this session
+  if (sessionStorage.getItem('push-prompt-dismissed')) {
+    prompt.remove();
+  }
+
+  // ── Enable button ──
+  const VAPID_PUBLIC_KEY = "{{ VAPID_PUBLIC_KEY }}";
+
+  enableBtn.addEventListener('click', async () => {
+    clearTimeout(autoDismiss);
+    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+      statusEl.textContent = 'Not supported';
+      return;
+    }
+    enableBtn.disabled = true;
+    enableBtn.textContent = 'Requesting…';
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const permission   = await Notification.requestPermission();
+      if (permission !== 'granted') {
+        statusEl.textContent = '❌ Denied';
+        enableBtn.textContent = 'Enable Alerts';
+        enableBtn.disabled = false;
+        return;
+      }
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      });
+      const resp = await fetch('{% url "notifications:push_subscribe" %}', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': '{{ csrf_token }}',
+        },
+        body: JSON.stringify(subscription),
+      });
+      const data = await resp.json();
+      if (data.status === 'ok') {
+        statusEl.textContent = '✅';
+        enableBtn.textContent = 'Done!';
+        setTimeout(hidePrompt, 1800);
+      } else {
+        statusEl.textContent = '❌ Error';
+        enableBtn.disabled = false;
+        enableBtn.textContent = 'Enable Alerts';
+      }
+    } catch (err) {
+      console.error('Push error', err);
+      statusEl.textContent = '❌ Failed';
+      enableBtn.disabled = false;
+      enableBtn.textContent = 'Enable Alerts';
+    }
+  });
+})();
+</script>
+{% endif %}

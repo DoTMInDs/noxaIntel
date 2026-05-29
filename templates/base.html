@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="night">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}NoxaIntel - AI Soccer Betting Analysis{% endblock %}</title>
+    <!-- Tailwind CSS & DaisyUI -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+    <!-- HTMX -->
+    <script src="https://unpkg.com/htmx.org@1.9.10" integrity="sha384-D1Kt99CQMDuVetoL1lrYwg5t+9QdHe7NLX/SoJYkXDFfX37iInKRy5xLSi8nO7UC" crossorigin="anonymous"></script>
+    <!-- PWA Meta & Manifest -->
+    <meta name="theme-color" content="#0F172A">
+    <link rel="manifest" href="{% url 'pwa:manifest' %}">
+    <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/192/000000/soccer-ball.png">
+    
+    <style>
+        .glass-panel {
+            background: rgba(15, 23, 42, 0.45);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        /* Custom scrollbars */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.05);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        /* Fix HTMX indicators taking up space when hidden */
+        .htmx-indicator {
+            display: none !important;
+        }
+        .htmx-request .htmx-indicator,
+        .htmx-request.htmx-indicator {
+            display: block !important;
+        }
+    </style>
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-base-300 text-base-content min-h-screen flex flex-col" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+    <!-- Top Navbar -->
+    {% include 'components/navbar.html' %}
+
+    <div class="flex flex-1 overflow-hidden">
+        <!-- Sidebar Navigation (Only visible to authenticated users) -->
+        {% if user.is_authenticated %}
+            {% include 'components/sidebar.html' %}
+        {% endif %}
+
+        <!-- Main Content Area -->
+        <main class="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 space-y-6 pb-24 md:pb-6">
+            {% if messages %}
+                <div class="toast toast-top toast-end z-50">
+                    {% for message in messages %}
+                        <div class="alert {% if message.tags == 'error' %}alert-error{% elif message.tags == 'success' %}alert-success{% else %}alert-info{% endif %} shadow-lg">
+                            <div>
+                                <span>{{ message }}</span>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+                <script>
+                    setTimeout(() => {
+                        const alerts = document.querySelectorAll('.toast');
+                        alerts.forEach(a => a.remove());
+                    }, 5000);
+                </script>
+            {% endif %}
+
+            {% block content %}{% endblock %}
+            {% include 'components/push_prompt.html' %}
+        </main>
+    </div>
+
+    <!-- PWA Service Worker Registration -->
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('{% url "pwa:serviceworker" %}', { scope: '/' })
+                    .then(reg => {
+                        console.log('ServiceWorker registered successfully with scope: ', reg.scope);
+                    })
+                    .catch(err => {
+                        console.error('ServiceWorker registration failed: ', err);
+                    });
+            });
+        }
+    </script>
+    
+    {% if user.is_authenticated %}
+        {% include 'components/bottom_nav.html' %}
+    {% endif %}
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

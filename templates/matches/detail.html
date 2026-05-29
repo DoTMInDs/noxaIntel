@@ -1,0 +1,170 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ match.home_team.name }} vs {{ match.away_team.name }} - Match Detail{% endblock %}
+
+{% block content %}
+<div class="space-y-8 max-w-5xl mx-auto">
+    <!-- Back to Dashboard -->
+    <a href="{% url 'matches:dashboard' %}" class="btn btn-ghost btn-sm gap-1 pl-2">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+        </svg>
+        Dashboard
+    </a>
+
+    <!-- Match Header Banner -->
+    <div class="card bg-base-100 border border-base-200 shadow-xl rounded-2xl overflow-hidden">
+        <div class="card-body p-6 md:p-8 space-y-6">
+            <!-- League & Status Header -->
+            <div class="flex justify-between items-center text-xs opacity-75">
+                <span class="font-bold uppercase tracking-wider text-primary">
+                    🏆 {{ match.league.name }} ({{ match.league.country }})
+                </span>
+                <span class="font-medium">
+                    {{ match.match_date|date:"F d, Y @ H:i" }}
+                </span>
+            </div>
+
+            <!-- VS Banner Grid -->
+            <div class="grid grid-cols-7 items-center text-center py-4">
+                <!-- Home Team -->
+                <div class="col-span-3 flex flex-col items-center gap-3">
+                    <div class="w-16 h-16 md:w-20 md:h-20 rounded-full bg-base-200 border border-base-300 flex items-center justify-center font-black text-xl shadow-md">
+                        {% if match.home_team.logo_url %}
+                            <img src="{{ match.home_team.logo_url }}" class="w-12 h-12 md:w-14 md:h-14 object-contain" alt="{{ match.home_team.name }}">
+                        {% else %}
+                            {{ match.home_team.name|slice:":2"|upper }}
+                        {% endif %}
+                    </div>
+                    <h2 class="font-extrabold text-base md:text-xl text-base-content">{{ match.home_team.name }}</h2>
+                </div>
+
+                <!-- Live Score / VS Divider -->
+                <div class="col-span-1 flex flex-col items-center justify-center">
+                    {% if match.status == 'LIVE' or match.status == 'FINISHED' %}
+                        <div class="space-y-1">
+                            <span class="text-3xl md:text-5xl font-black tracking-widest text-primary">
+                                {{ match.home_score }}:{{ match.away_score }}
+                            </span>
+                            <div class="flex justify-center">
+                                {% if match.status == 'LIVE' %}
+                                    <span class="badge badge-error badge-sm font-bold py-1.5 animate-pulse text-[10px]">
+                                        LIVE {{ match.minute }}
+                                    </span>
+                                {% else %}
+                                    <span class="badge badge-neutral badge-sm font-bold py-1.5 text-[10px]">
+                                        FT
+                                    </span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="flex flex-col items-center gap-1.5">
+                            <span class="text-xl md:text-3xl font-light opacity-30">VS</span>
+                            <span class="badge badge-info badge-outline badge-sm font-bold text-[9px] uppercase tracking-wider">
+                                Scheduled
+                            </span>
+                        </div>
+                    {% endif %}
+                </div>
+
+                <!-- Away Team -->
+                <div class="col-span-3 flex flex-col items-center gap-3">
+                    <div class="w-16 h-16 md:w-20 md:h-20 rounded-full bg-base-200 border border-base-300 flex items-center justify-center font-black text-xl shadow-md">
+                        {% if match.away_team.logo_url %}
+                            <img src="{{ match.away_team.logo_url }}" class="w-12 h-12 md:w-14 md:h-14 object-contain" alt="{{ match.away_team.name }}">
+                        {% else %}
+                            {{ match.away_team.name|slice:":2"|upper }}
+                        {% endif %}
+                    </div>
+                    <h2 class="font-extrabold text-base md:text-xl text-base-content">{{ match.away_team.name }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Odds and Predictions Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <!-- Live Market Odds Column (1/3 Width) -->
+        <div class="md:col-span-1 space-y-6">
+            <div class="card bg-base-100 border border-base-200 shadow-xl rounded-2xl">
+                <div class="card-body p-6 space-y-4">
+                    <h3 class="font-bold text-lg text-primary">Live Betting Markets</h3>
+                    
+                    {% if latest_odds %}
+                        <div class="space-y-4 text-sm">
+                            <!-- Moneyline -->
+                            <div class="space-y-2">
+                                <p class="text-xs font-semibold opacity-60">Full-Time Moneyline (1X2)</p>
+                                <div class="grid grid-cols-3 gap-2 text-center text-xs">
+                                    <div class="bg-base-200 p-2 rounded-lg">
+                                        <p class="opacity-50">1</p>
+                                        <p class="font-bold">{{ latest_odds.home_odds }}</p>
+                                    </div>
+                                    <div class="bg-base-200 p-2 rounded-lg">
+                                        <p class="opacity-50">X</p>
+                                        <p class="font-bold">{{ latest_odds.draw_odds }}</p>
+                                    </div>
+                                    <div class="bg-base-200 p-2 rounded-lg">
+                                        <p class="opacity-50">2</p>
+                                        <p class="font-bold">{{ latest_odds.away_odds }}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Over/Under -->
+                            <div class="space-y-2 border-t border-base-200 pt-3">
+                                <p class="text-xs font-semibold opacity-60">Goals Over/Under 2.5</p>
+                                <div class="grid grid-cols-2 gap-2 text-center text-xs">
+                                    <div class="bg-base-200 p-2 rounded-lg">
+                                        <p class="opacity-50">Over 2.5</p>
+                                        <p class="font-bold">{{ latest_odds.over_2_5_odds|default:"-" }}</p>
+                                    </div>
+                                    <div class="bg-base-200 p-2 rounded-lg">
+                                        <p class="opacity-50">Under 2.5</p>
+                                        <p class="font-bold">{{ latest_odds.under_2_5_odds|default:"-" }}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- BTTS -->
+                            <div class="space-y-2 border-t border-base-200 pt-3">
+                                <p class="text-xs font-semibold opacity-60">Both Teams to Score (BTTS)</p>
+                                <div class="grid grid-cols-2 gap-2 text-center text-xs">
+                                    <div class="bg-base-200 p-2 rounded-lg">
+                                        <p class="opacity-50">Yes</p>
+                                        <p class="font-bold">{{ latest_odds.btts_yes_odds|default:"-" }}</p>
+                                    </div>
+                                    <div class="bg-base-200 p-2 rounded-lg">
+                                        <p class="opacity-50">No</p>
+                                        <p class="font-bold">{{ latest_odds.btts_no_odds|default:"-" }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="text-center py-6 opacity-50 text-xs">
+                            No active betting odds are currently registered for this match.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Predictions Column (2/3 Width) -->
+        <div class="md:col-span-2 space-y-6">
+            <!-- Dynamic HTMX Lazy Loader -->
+            <div id="prediction-container" 
+                 hx-get="{% url 'predictions:partial' match.id %}" 
+                 hx-trigger="load" 
+                 hx-target="this" 
+                 hx-indicator="#prediction-indicator">
+                
+                <div id="prediction-indicator" class="w-full">
+                    {% include 'components/skeleton.html' with type='prediction' %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

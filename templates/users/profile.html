@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+
+{% block title %}My Profile - NoxaIntel AI Betting{% endblock %}
+
+{% block content %}
+<div class="space-y-8 max-w-6xl mx-auto">
+    <!-- Header -->
+    <div>
+        <h1 class="text-3xl font-extrabold tracking-tight">Profile & Preferences</h1>
+        <p class="text-sm opacity-60">Manage your subscription, alert settings, and league tracking.</p>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Preferences Column (1/3 width) -->
+        <div class="lg:col-span-1 space-y-6">
+            <div class="card bg-base-100 border border-base-200 shadow-xl rounded-2xl">
+                <div class="card-body p-6 space-y-4">
+                    <h3 class="font-bold text-lg text-primary">Alert Settings</h3>
+                    <div id="profile-form-container">
+                        {% include 'users/partials/profile_form.html' %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Subscription Plans Column (2/3 width) -->
+        <div class="lg:col-span-2 space-y-6">
+            <div class="card bg-base-100 border border-base-200 shadow-xl rounded-2xl">
+                <div class="card-body p-6 space-y-6">
+                    <div>
+                        <h3 class="font-bold text-lg text-primary">Subscription Status</h3>
+                        <p class="text-sm opacity-60 mt-1">Upgrade your tier to unlock VIP selections and the AI Assistant.</p>
+                    </div>
+
+                    <!-- Current Subscription Indicator -->
+                    <div class="p-4 rounded-xl bg-base-200 flex flex-wrap justify-between items-center gap-4">
+                        <div class="flex items-center gap-3">
+                            <span class="text-3xl">🔑</span>
+                            <div>
+                                <p class="text-xs opacity-50 uppercase font-semibold">Current Plan</p>
+                                <h4 class="font-bold text-lg text-base-content">{{ profile.subscription_tier.name }} Tier</h4>
+                            </div>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-xl font-black text-primary">${{ profile.subscription_tier.price }}/mo</p>
+                            <p class="text-[10px] opacity-40">Billed monthly</p>
+                        </div>
+                    </div>
+
+                    <!-- Plans Listing Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
+                        {% for tier in tiers %}
+                            <div class="card bg-base-200 border {% if profile.subscription_tier.id == tier.id %}border-primary{% else %}border-base-300{% endif %} hover:shadow-md transition-all duration-200">
+                                <div class="card-body p-5 space-y-4 justify-between">
+                                    <div class="space-y-2">
+                                        <div class="flex justify-between items-start">
+                                            <h4 class="font-bold text-base">{{ tier.name }}</h4>
+                                            {% if profile.subscription_tier.id == tier.id %}
+                                                <span class="badge badge-primary badge-xs">Active</span>
+                                            {% endif %}
+                                        </div>
+                                        <p class="text-2xl font-black">${{ tier.price }}<span class="text-xs font-normal opacity-50">/mo</span></p>
+                                        <p class="text-xs opacity-60 leading-relaxed">{{ tier.description }}</p>
+                                    </div>
+
+                                    <ul class="text-[11px] space-y-1.5 border-t border-base-300 pt-3 opacity-80">
+                                        <li class="flex items-center gap-1.5">
+                                            <span>✓</span> Standard Predictions
+                                        </li>
+                                        <li class="flex items-center gap-1.5 {% if not tier.access_advanced_ai %}opacity-30 line-through{% endif %}">
+                                            <span>{% if tier.access_advanced_ai %}✓{% else %}✗{% endif %}</span> Advanced AI Models
+                                        </li>
+                                        <li class="flex items-center gap-1.5 {% if not tier.access_vip_tips %}opacity-30 line-through{% endif %}">
+                                            <span>{% if tier.access_vip_tips %}✓{% else %}✗{% endif %}</span> VIP Betting Tips
+                                        </li>
+                                        <li class="flex items-center gap-1.5 {% if not tier.access_ai_assistant %}opacity-30 line-through{% endif %}">
+                                            <span>{% if tier.access_ai_assistant %}✓{% else %}✗{% endif %}</span> AI Chat Assistant
+                                        </li>
+                                    </ul>
+
+                                    <div class="card-actions mt-3">
+                                        {% if profile.subscription_tier.id == tier.id %}
+                                            <button class="btn btn-disabled btn-sm w-full font-bold">Current Tier</button>
+                                        {% else %}
+                                            <a href="{% url 'users:subscription_upgrade' tier.id %}" class="btn btn-primary btn-sm w-full font-bold">
+                                                Select {{ tier.name }}
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,54 @@
+# Task List: AI Soccer Betting Analysis Platform
+
+- `[x]` Project Setup & Core Configuration
+  - `[x]` Create requirements.txt
+  - `[x]` Create manage.py and config structure
+  - `[x]` Configure settings.py (caching, celery, db, apps, middleware)
+  - `[x]` Configure urls.py, celery.py, wsgi.py, asgi.py
+- `[x]` Users App Implementation
+  - `[x]` Create models (CustomUser, SubscriptionTier, Profile)
+  - `[x]` Create forms, views, and urls
+- `[x]` Matches App Implementation
+  - `[x]` Create models (League, Team, Match, OddsSnapshot)
+  - `[x]` Create views and urls for dashboard and HTMX partials
+- `[x]` Predictions App Implementation
+  - `[x]` Create models (Prediction, AIAnalysis)
+  - `[x]` Create views and urls (caching, stale-while-revalidate)
+- `[x]` Betting App Implementation
+  - `[x]` Create models (BettingTip)
+  - `[x]` Create views and urls for tips dashboard and filtering
+- `[x]` AI Engine App Implementation
+  - `[x]` Create services (ML precomputation, AI assistant context)
+  - `[x]` Create celery tasks and views/urls for assistant chat
+- `[x]` Notifications App Implementation
+  - `[x]` Create models, views, and urls
+- `[x]` Analytics App Implementation
+  - `[x]` Create models, views, and urls for monitoring accuracy and cache metrics
+- `[x]` PWA App Implementation
+  - `[x]` Create views and urls (manifest, serviceworker, offline fallback)
+- `[x]` Templates & Frontend Integration
+  - `[x]` Create base.html and components (navbar, sidebar, skeleton)
+  - `[x]` Create app-specific templates (users, matches, predictions, betting, ai_engine, notifications, analytics, pwa)
+- `[x]` Verification & System Checks
+  - `[x]` Run makemigrations and migrate
+  - `[x]` Verify cache and celery task functionality
+  - `[x]` Verify HTMX partial responses and PWA load
+- `[x]` Core Services Ingestion Layer
+  - `[x]` Create cache wrapper service: `services/cache_service.py`
+  - `[x]` Create API integration service: `services/football_api_service.py` (API-Football, Football-Data.org)
+  - `[x]` Create odds API integration service: `services/odds_service.py`
+  - `[x]` Create ML/heuristic prediction engine service: `services/prediction_service.py`
+  - `[x]` Create voice parsing service: `services/voice_service.py`
+  - `[x]` Create AI chat response generator: `services/ai_chat_service.py`
+- `[x]` Background Processing & Celery
+  - `[x]` Register periodic sync tasks in `config/celery.py`
+  - `[x]` Implement Celery Beat tasks in `ai_engine/tasks.py` (live fixture updates every 2m, daily ingestion, predictions precomputation)
+- `[x]` Frontend & Navigation Updates
+  - `[x]` Update `templates/base.html` for strict mobile-first styling and HTMX boost/swaps
+  - `[x]` Create mobile sticky bottom nav tab bar: `templates/components/bottom_nav.html`
+- `[x]` Voice Assistant Integration
+  - `[x]` Modify `ai_engine/views.py` and `ai_engine/urls.py` to route queries through `VoiceService` and `AIChatService`
+  - `[x]` Redesign `templates/ai_engine/assistant.html` to support Push-to-Talk and optional "Hey Bet" wake word recognition settings
+- `[x]` Verification & Deployment Checks
+  - `[x]` Execute migrations and verify system works
+  - `[x]` Manually verify mobile interface and Voice queriesy task functionality

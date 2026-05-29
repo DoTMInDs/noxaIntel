@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+
+{% block title %}Notifications - NoxaIntel{% endblock %}
+
+{% block content %}
+<div class="space-y-6 max-w-3xl mx-auto">
+    <!-- Header -->
+    <div class="flex justify-between items-center pb-2 border-b border-base-200">
+        <div>
+            <h1 class="text-3xl font-extrabold tracking-tight">System Alerts</h1>
+            <p class="text-sm opacity-60">High-confidence betting tips, live goals, and model accuracy updates.</p>
+        </div>
+        <span class="badge badge-primary font-bold">Inbox</span>
+    </div>
+
+    <!-- Notifications List Wrapper -->
+    <div id="notifications-list-container">
+        {% include 'notifications/partials/list_items.html' %}
+    </div>
+</div>
+{% endblock %}

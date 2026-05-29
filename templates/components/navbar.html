@@ -1,0 +1,72 @@
+<div class="navbar bg-base-100 border-b border-base-200 px-4 md:px-6 z-40 relative">
+    <div class="flex-1">
+        <a href="{% url 'home' %}" class="btn btn-ghost normal-case text-xl font-black gap-2 tracking-wider">
+            <span>⚽</span>
+            <span class="bg-gradient-to-r from-emerald-400 to-cyan-400 bg-clip-text text-transparent">NoxaIntel</span>
+            <span class="badge badge-primary badge-sm font-semibold tracking-normal">ML</span>
+        </a>
+    </div>
+
+    <div class="flex-none gap-4">
+        {% if user.is_authenticated %}
+            <!-- Subscription Tier Badge -->
+            <div class="hidden sm:inline-flex">
+                {% if user.profile.subscription_tier.name == 'VIP' %}
+                    <span class="badge badge-warning gap-1 py-3 px-3 font-bold shadow-lg shadow-warning/10">
+                        👑 VIP
+                    </span>
+                {% elif user.profile.subscription_tier.name == 'Premium' %}
+                    <span class="badge badge-secondary gap-1 py-3 px-3 font-bold shadow-lg shadow-secondary/10">
+                        ⚡ Premium
+                    </span>
+                {% else %}
+                    <span class="badge badge-accent badge-outline gap-1 py-3 px-3 font-semibold">
+                        Free Tier
+                    </span>
+                {% endif %}
+            </div>
+
+            <!-- Notifications Bell -->
+            <div class="dropdown dropdown-end">
+                <a href="{% url 'notifications:list' %}" class="btn btn-ghost btn-circle relative">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                    </svg>
+                    <!-- HTMX Notification Count Badge -->
+                    <div hx-get="{% url 'notifications:badge_partial' %}" hx-trigger="load, every 30s" hx-swap="outerHTML">
+                        <!-- Loaded dynamically -->
+                    </div>
+                </a>
+            </div>
+
+            <!-- User Menu -->
+            <div class="dropdown dropdown-end">
+                <div tabindex="0" role="button" class="btn btn-ghost btn-circle avatar placeholder">
+                    <div class="bg-neutral text-neutral-content rounded-full w-10 border border-neutral-content/10 shadow-md">
+                        <span class="text-sm font-bold">{{ user.username|slice:":2"|upper }}</span>
+                    </div>
+                </div>
+                <ul tabindex="0" class="menu menu-sm dropdown-content mt-3 z-[1] p-2 shadow-2xl bg-base-100 rounded-box w-52 border border-base-200">
+                    <li class="menu-title px-4 py-2 border-b border-base-200">
+                        <span class="font-bold text-base-content">{{ user.username }}</span>
+                        <span class="text-xs opacity-50">{{ user.email }}</span>
+                    </li>
+                    <li><a href="{% url 'users:profile' %}" class="py-3">👤 My Profile</a></li>
+                    <li><a href="{% url 'notifications:list' %}" class="py-3 justify-between">🔔 Notifications</a></li>
+                    <li class="border-t border-base-200 mt-2 pt-2">
+                        <form action="{% url 'users:logout' %}" method="post" class="w-full">
+                            {% csrf_token %}
+                            <button type="submit" class="text-error w-full text-left py-2 font-medium">
+                                🚪 Log Out
+                            </button>
+                        </form>
+                    </li>
+                </ul>
+            </div>
+        {% else %}
+            <!-- Not Authenticated -->
+            <a href="{% url 'users:login' %}" class="btn btn-ghost btn-sm">Log In</a>
+            <a href="{% url 'users:register' %}" class="btn btn-primary btn-sm px-4">Sign Up</a>
+        {% endif %}
+    </div>
+</div>

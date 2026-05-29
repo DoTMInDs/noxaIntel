@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="night">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Offline - NoxaIntel AI Betting</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
+</head>
+<body class="bg-base-300 min-h-screen flex items-center justify-center text-base-content">
+    <div class="card w-96 bg-base-100 shadow-2xl border border-primary/10 text-center p-6">
+        <figure class="px-10 pt-10">
+            <div class="relative w-24 h-24 flex items-center justify-center rounded-full bg-base-200 border border-primary/20 animate-pulse">
+                <span class="text-5xl">⚽</span>
+                <span class="absolute top-0 right-0 flex h-3 h-3">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                </span>
+            </div>
+        </figure>
+        <div class="card-body items-center text-center">
+            <h2 class="card-title text-2xl font-bold text-primary">No Connection</h2>
+            <p class="text-sm opacity-70 my-2">
+                NoxaIntel AI is currently offline. Real-time predictions, odds data, and the AI Assistant require an active internet connection.
+            </p>
+            <div class="card-actions mt-4 w-full">
+                <button onclick="window.location.reload()" class="btn btn-primary w-full">
+                    Retry Connection
+                </button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

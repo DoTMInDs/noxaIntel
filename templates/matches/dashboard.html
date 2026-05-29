@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block title %}Match Dashboard - NoxaIntel AI Betting{% endblock %}
+
+{% block content %}
+<div class="space-y-6 max-w-6xl mx-auto">
+    <!-- Header -->
+    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+        <div>
+            <h1 class="text-3xl font-extrabold tracking-tight">Soccer Match Dashboard</h1>
+            <p class="text-sm opacity-60">Near real-time odds, live stats tracking, and ML precomputed predictions.</p>
+        </div>
+        <div class="flex items-center gap-2">
+            <span class="relative flex h-3 w-3">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+            </span>
+            <span class="text-xs font-semibold opacity-70">Live predictions feed active</span>
+        </div>
+    </div>
+
+    <!-- Filter Controls Bar -->
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-base-100 p-4 rounded-2xl border border-base-200 shadow-sm">
+        <input type="hidden" name="filter" id="active-filter" value="upcoming">
+
+        <!-- Tabs -->
+        <div class="tabs tabs-boxed bg-base-200/50 p-1">
+            <button class="tab tab-active transition-all duration-150 rounded-lg px-4" 
+                    hx-get="{% url 'matches:list_partial' %}" 
+                    hx-include="#league-select, #active-filter"
+                    hx-target="#match-list-container" 
+                    hx-indicator="#match-list-indicator"
+                    onclick="setActiveTab(this, 'upcoming')">
+                Upcoming
+            </button>
+            <button class="tab transition-all duration-150 rounded-lg px-4" 
+                    hx-get="{% url 'matches:list_partial' %}" 
+                    hx-include="#league-select, #active-filter"
+                    hx-target="#match-list-container" 
+                    hx-indicator="#match-list-indicator"
+                    onclick="setActiveTab(this, 'live')">
+                Live
+            </button>
+            <button class="tab transition-all duration-150 rounded-lg px-4" 
+                    hx-get="{% url 'matches:list_partial' %}" 
+                    hx-include="#league-select, #active-filter"
+                    hx-target="#match-list-container" 
+                    hx-indicator="#match-list-indicator"
+                    onclick="setActiveTab(this, 'finished')">
+                Finished
+            </button>
+        </div>
+
+        <!-- League Dropdown -->
+        <div class="w-full sm:w-auto">
+            <select name="league" id="league-select" class="select select-bordered select-sm w-full sm:w-60 bg-base-200/50 focus:border-primary"
+                    hx-get="{% url 'matches:list_partial' %}"
+                    hx-include="#active-filter"
+                    hx-target="#match-list-container"
+                    hx-indicator="#match-list-indicator">
+                <option value="">All Leagues</option>
+                {% for league in leagues %}
+                    <option value="{{ league.id }}">{{ league.name }} ({{ league.country }})</option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+
+    <!-- Match List Loading Indicator -->
+    <div id="match-list-indicator" class="htmx-indicator w-full">
+        {% include 'components/skeleton.html' with type='match_list' %}
+    </div>
+
+    <!-- Match List Content Container -->
+    <div id="match-list-container" 
+         hx-get="{% url 'matches:list_partial' %}" 
+         hx-trigger="load, every 15s" 
+         hx-include="#league-select, #active-filter"
+         hx-target="this" 
+         class="space-y-4">
+        {% include 'components/skeleton.html' with type='match_list' %}
+    </div>
+</div>
+
+<script>
+    function setActiveTab(button, value) {
+        document.querySelectorAll('.tabs .tab').forEach(t => t.classList.remove('tab-active'));
+        button.classList.add('tab-active');
+        document.getElementById('active-filter').value = value;
+    }
+</script>
+{% endblock %}

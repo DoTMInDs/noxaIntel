@@ -1,0 +1,4 @@
+.env*
+.venv/
+# implementation_plan.md
+# task.md
