@@ -94,17 +94,23 @@
                     <label class="label font-bold text-xs uppercase tracking-wider text-base-content/75">
                         Mobile Phone Number
                     </label>
-                    <input type="text" 
-                           id="momo_account_number_input"
-                           name="momo_account_number" 
-                           required 
-                           pattern="0[235][0-9]{8}"
-                           placeholder="e.g. 055XXXXXXX" 
-                           hx-get="{% url 'wallet:verify_account' %}"
-                           hx-trigger="keyup changed delay:800ms"
-                           hx-target="#account_verification_result"
-                           hx-include="[name='momo_code']"
-                           class="input input-bordered w-full font-bold bg-base-200/50 border-base-content/10 focus:border-primary text-base-content focus:outline-none rounded-xl" />
+                    <div class="flex items-center gap-2">
+                        <!--post code-->
+                        <div class="flex items-center gap-1.5 bg-base-200/50 px-3 py-2 rounded-xl border border-base-content/10 shrink-0">
+                            <span class="font-bold text-base-content/80">+233</span>
+                        </div>
+                        <input type="tel" 
+                            id="momo_account_number_input"
+                            name="momo_account_number" 
+                            required 
+                            pattern="0[235][0-9]{8}"
+                            placeholder="e.g. 055XXXXXXX" 
+                            hx-get="{% url 'wallet:verify_account' %}"
+                            hx-trigger="keyup changed delay:800ms"
+                            hx-target="#account_verification_result"
+                            hx-include="[name='momo_code']"
+                            class="input input-bordered w-full font-bold bg-base-200/50 border-base-content/10 placeholder:text-slate-600 focus:border-primary text-base-content focus:outline-none rounded-xl" />
+                    </div>
                     <div class="label">
                         <span class="label-text-alt text-[9px] text-base-content/40 font-semibold">Enter a valid 10-digit GHS mobile money number starting with 0.</span>
                     </div>
