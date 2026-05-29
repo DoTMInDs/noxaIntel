@@ -65,3 +65,57 @@ self.addEventListener('fetch', (event) => {
             })
     );
 });
+
+/* ── Web Push Event Listeners ── */
+self.addEventListener('push', function(event) {
+    if (event.data) {
+        try {
+            const data = event.data.json();
+            const title = data.title || 'NoxaIntel Alert';
+            const options = {
+                body: data.body || '',
+                icon: data.icon || 'https://img.icons8.com/fluency/192/000000/soccer-ball.png',
+                badge: 'https://img.icons8.com/fluency/72/000000/soccer-ball.png',
+                vibrate: [100, 50, 100],
+                data: {
+                    url: data.url || '/'
+                }
+            };
+            event.waitUntil(
+                self.registration.showNotification(title, options)
+            );
+        } catch (e) {
+            const text = event.data.text();
+            event.waitUntil(
+                self.registration.showNotification('NoxaIntel Alert', {
+                    body: text,
+                    icon: 'https://img.icons8.com/fluency/192/000000/soccer-ball.png',
+                    data: {
+                        url: '/'
+                    }
+                })
+            );
+        }
+    }
+});
+
+self.addEventListener('notificationclick', function(event) {
+    event.notification.close();
+    event.waitUntil(
+        clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
+            const targetUrl = event.notification.data ? event.notification.data.url : '/';
+            // If absolute URL, compare relative or just find match
+            const fullTargetUrl = new URL(targetUrl, self.location.origin).href;
+            for (let i = 0; i < clientList.length; i++) {
+                let client = clientList[i];
+                if (client.url === fullTargetUrl && 'focus' in client) {
+                    return client.focus();
+                }
+            }
+            if (clients.openWindow) {
+                return clients.openWindow(targetUrl);
+            }
+        })
+    );
+});
+

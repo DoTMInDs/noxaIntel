@@ -6,7 +6,16 @@ from django.dispatch import receiver
 
 class CustomUser(AbstractUser):
     """Custom user model for the AI soccer betting platform."""
-    pass
+    phone_number = models.CharField(max_length=20, unique=True, null=True, blank=True)
+    email = models.EmailField(unique=True)
+
+    USERNAME_FIELD = 'phone_number'
+    REQUIRED_FIELDS = ['email', 'username']
+
+    def __str__(self):
+        return self.phone_number or self.username or self.email or f"User #{self.pk}"
+
+
 
 
 class SubscriptionTier(models.Model):

@@ -149,6 +149,12 @@
     return Uint8Array.from([...raw].map(c => c.charCodeAt(0)));
   }
 
+  function getCsrfToken() {
+    // Attempt to get CSRF token from cookie first, fall back to Django variable
+    const cookieToken = document.cookie.split('; ').find(row => row.startsWith('csrftoken='))?.split('=')[1];
+    return cookieToken || '{{ csrf_token }}';
+  }
+
   // ── Auto-dismiss after 8 s (re-appears when user clicks "Enable Push") ──
   let autoDismiss = setTimeout(hidePrompt, 8000);
 
@@ -176,7 +182,12 @@
     enableBtn.disabled = true;
     enableBtn.textContent = 'Requesting…';
     try {
-      const registration = await navigator.serviceWorker.ready;
+      // Get existing registration, or wait for ready registration
+      let registration = await navigator.serviceWorker.getRegistration();
+      if (!registration) {
+        registration = await navigator.serviceWorker.ready;
+      }
+      
       const permission   = await Notification.requestPermission();
       if (permission !== 'granted') {
         statusEl.textContent = '❌ Denied';
@@ -192,7 +203,7 @@
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-CSRFToken': '{{ csrf_token }}',
+          'X-CSRFToken': getCsrfToken(),
         },
         body: JSON.stringify(subscription),
       });

@@ -5,7 +5,26 @@ from .models import CustomUser, SubscriptionTier, Profile
 
 @admin.register(CustomUser)
 class CustomUserAdmin(UserAdmin):
-    list_display = ('username', 'email', 'first_name', 'last_name', 'is_staff')
+    list_display = ('phone_number', 'username', 'email', 'first_name', 'last_name', 'is_staff')
+    search_fields = ('phone_number', 'username', 'email')
+    ordering = ('phone_number',)
+
+    fieldsets = (
+        (None, {'fields': ('phone_number', 'password')}),
+        ('Personal Info', {'fields': ('first_name', 'last_name', 'email', 'username')}),
+        ('Permissions', {
+            'fields': ('is_active', 'is_staff', 'is_superuser', 'groups', 'user_permissions'),
+        }),
+        ('Important dates', {'fields': ('last_login', 'date_joined')}),
+    )
+
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': ('phone_number', 'email', 'password'),
+        }),
+    )
+
 
 
 @admin.register(SubscriptionTier)

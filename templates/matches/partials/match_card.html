@@ -1,121 +1,105 @@
 {% with match.odds_snapshots.first as odds %}
-<div class="card bg-base-100 border border-base-200 hover:border-primary/30 shadow-md hover:shadow-xl transition-all duration-300 rounded-2xl overflow-hidden group">
-    <!-- Card Header -->
-    <div class="px-5 py-3.5 bg-base-200/40 border-b border-base-200 flex justify-between items-center text-xs">
-        <div class="flex items-center gap-2">
-            {% if match.league.logo_url %}
-                <img src="{{ match.league.logo_url }}" class="w-4 h-4 object-contain rounded" alt="{{ match.league.name }}" onerror="this.style.display='none';this.nextElementSibling.style.display='inline'">
-                <span class="opacity-60" style="display:none">&#127942;</span>
-            {% else %}
-                <span class="opacity-60">&#127942;</span>
-            {% endif %}
-            <span class="font-bold opacity-80">{{ match.league.name }}</span>
-            <span class="opacity-40">|</span>
-            <span class="opacity-50">{{ match.league.country }}</span>
-        </div>
-        
-        <!-- Match Status Badge -->
-        <div>
-            {% if match.status == 'LIVE' %}
-                <span class="badge badge-error gap-1 py-2 font-bold animate-pulse text-[10px]">
-                    <span class="w-1.5 h-1.5 rounded-full bg-white"></span>
-                    LIVE {{ match.minute }}
-                </span>
-            {% elif match.status == 'FINISHED' %}
-                <span class="badge badge-ghost gap-1 py-2 font-bold text-[10px]">
-                    FT
-                </span>
-            {% else %}
-                <span class="badge badge-info gap-1 py-2 font-semibold text-[10px]">
-                    {{ match.match_date|date:"M d, H:i" }}
-                </span>
-            {% endif %}
-        </div>
-    </div>
-
-    <!-- Card Body -->
-    <div class="card-body p-6 space-y-6">
-        <!-- Teams & Score Grid -->
-        <div class="grid grid-cols-7 items-center text-center">
-            <!-- Home Team -->
-            <div class="col-span-3 flex flex-col items-center gap-2">
-                <div class="w-12 h-12 rounded-full bg-base-200 border border-base-300 flex items-center justify-center font-bold text-sm shadow-sm group-hover:scale-105 transition-transform duration-200">
-                    {% if match.home_team.logo_url %}
-                        <img src="{{ match.home_team.logo_url }}" class="w-8 h-8 object-contain" alt="{{ match.home_team.name }}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-                        <span style="display:none" class="w-8 h-8 items-center justify-center font-bold text-xs">{{ match.home_team.name|slice:':2'|upper }}</span>
-                    {% else %}
-                        {{ match.home_team.name|slice:':2'|upper }}
-                    {% endif %}
-                </div>
-                <span class="font-bold text-sm truncate max-w-full text-base-content">{{ match.home_team.name }}</span>
-            </div>
-
-            <!-- Score / Versus -->
-            <div class="col-span-1 flex flex-col items-center justify-center">
-                {% if match.status == 'LIVE' or match.status == 'FINISHED' %}
-                    <span class="text-2xl font-black tracking-wider text-primary">
-                        {{ match.home_score }}:{{ match.away_score }}
-                    </span>
-                {% else %}
-                    <span class="text-xs font-semibold opacity-30 uppercase tracking-widest">VS</span>
-                {% endif %}
-            </div>
-
-            <!-- Away Team -->
-            <div class="col-span-3 flex flex-col items-center gap-2">
-                <div class="w-12 h-12 rounded-full bg-base-200 border border-base-300 flex items-center justify-center font-bold text-sm shadow-sm group-hover:scale-105 transition-transform duration-200">
-                    {% if match.away_team.logo_url %}
-                        <img src="{{ match.away_team.logo_url }}" class="w-8 h-8 object-contain" alt="{{ match.away_team.name }}" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
-                        <span style="display:none" class="w-8 h-8 items-center justify-center font-bold text-xs">{{ match.away_team.name|slice:':2'|upper }}</span>
-                    {% else %}
-                        {{ match.away_team.name|slice:':2'|upper }}
-                    {% endif %}
-                </div>
-                <span class="font-bold text-sm truncate max-w-full text-base-content">{{ match.away_team.name }}</span>
-            </div>
-        </div>
-
-        <!-- Latest Odds Subgrid -->
-        {% if odds %}
-            <div class="grid grid-cols-3 gap-2 bg-base-200/50 p-2.5 rounded-xl border border-base-200 text-center text-xs">
-                <div class="space-y-1">
-                    <p class="opacity-50 font-medium">Home (1)</p>
-                    <p class="font-bold text-base-content">{{ odds.home_odds|default:"-" }}</p>
-                </div>
-                <div class="space-y-1 border-x border-base-300">
-                    <p class="opacity-50 font-medium">Draw (X)</p>
-                    <p class="font-bold text-base-content">{{ odds.draw_odds|default:"-" }}</p>
-                </div>
-                <div class="space-y-1">
-                    <p class="opacity-50 font-medium">Away (2)</p>
-                    <p class="font-bold text-base-content">{{ odds.away_odds|default:"-" }}</p>
-                </div>
-            </div>
+<div class="glass-panel hover:bg-base-200/60 border border-base-200/50 p-4 rounded-2xl flex items-center justify-between gap-4 transition-all duration-300 cursor-pointer group shadow-sm hover:shadow-md hover:border-primary/30"
+     onclick="window.location.href='{% url 'predictions:detail' match.id %}'">
+     
+    <!-- Left Section: Time/Status -->
+    <div class="flex flex-col items-center justify-center min-w-[56px] text-center border-r border-base-200/50 pr-4 flex-shrink-0">
+        {% if match.status == 'LIVE' %}
+            <span class="text-[10px] font-bold text-error tracking-wider uppercase animate-pulse">LIVE</span>
+            <span class="text-sm font-black text-error animate-pulse mt-0.5">{{ match.minute }}'</span>
+        {% elif match.status == 'FINISHED' %}
+            <span class="text-xs font-bold opacity-50">FT</span>
+        {% else %}
+            <span class="text-[10px] font-semibold text-primary uppercase">{{ match.match_date|date:"H:i" }}</span>
+            <span class="text-[9px] opacity-40 mt-0.5">{{ match.match_date|date:"M d" }}</span>
         {% endif %}
     </div>
 
-    <!-- Card Action Footer -->
-    <div class="px-6 py-4 bg-base-200/20 border-t border-base-200 flex justify-between items-center">
-        <!-- Confidence indicator if prediction exists -->
-        <div>
-            {% if match.prediction %}
-                <div class="flex items-center gap-1.5">
-                    <div class="radial-progress text-primary text-[8px] font-bold" style="--value:{{ match.prediction.confidence_score }}; --size:1.8rem; --thickness: 2px;" role="progressbar">
-                        {{ match.prediction.confidence_score }}%
-                    </div>
-                    <span class="text-[10px] font-semibold opacity-60">AI Confidence</span>
-                </div>
-            {% else %}
-                <span class="text-[10px] opacity-40">Predictions pending</span>
-            {% endif %}
+    <!-- Middle Section: Teams Vertical List -->
+    <div class="flex-1 min-w-0 space-y-2">
+        <!-- Home Team -->
+        <div class="flex items-center gap-2.5">
+            <div class="w-6 h-6 rounded-full bg-base-200 flex items-center justify-center overflow-hidden flex-shrink-0 border border-base-300">
+                {% if match.home_team.logo_url %}
+                    <img src="{{ match.home_team.logo_url }}" class="w-4.5 h-4.5 object-contain" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                    <span style="display:none" class="w-4 h-4 items-center justify-center font-bold text-[8px]">{{ match.home_team.name|slice:':2'|upper }}</span>
+                {% else %}
+                    <span class="font-bold text-[8px]">{{ match.home_team.name|slice:':2'|upper }}</span>
+                {% endif %}
+            </div>
+            <span class="text-sm font-bold truncate text-base-content/90 {% if match.status == 'FINISHED' and match.home_score < match.away_score %}opacity-50 font-normal{% endif %}">
+                {{ match.home_team.name }}
+            </span>
         </div>
 
-        <a href="{% url 'predictions:detail' match.id %}" class="btn btn-primary btn-sm rounded-xl font-bold gap-1 group-hover:translate-x-0.5 transition-transform duration-200 shadow-md shadow-primary/10 text-xs">
-            View AI Analysis
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
-            </svg>
-        </a>
+        <!-- Away Team -->
+        <div class="flex items-center gap-2.5">
+            <div class="w-6 h-6 rounded-full bg-base-200 flex items-center justify-center overflow-hidden flex-shrink-0 border border-base-300">
+                {% if match.away_team.logo_url %}
+                    <img src="{{ match.away_team.logo_url }}" class="w-4.5 h-4.5 object-contain" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'">
+                    <span style="display:none" class="w-4 h-4 items-center justify-center font-bold text-[8px]">{{ match.away_team.name|slice:':2'|upper }}</span>
+                {% else %}
+                    <span class="font-bold text-[8px]">{{ match.away_team.name|slice:':2'|upper }}</span>
+                {% endif %}
+            </div>
+            <span class="text-sm font-bold truncate text-base-content/90 {% if match.status == 'FINISHED' and match.away_score < match.home_score %}opacity-50 font-normal{% endif %}">
+                {{ match.away_team.name }}
+            </span>
+        </div>
     </div>
+
+    <!-- Right Section: Score or Odds -->
+    <div class="flex items-center gap-4 flex-shrink-0">
+        {% if match.status == 'LIVE' or match.status == 'FINISHED' %}
+            <!-- Score display stacked vertically matching teams -->
+            <div class="flex flex-col items-center justify-center font-black text-base text-base-content min-w-[24px] gap-2.5 py-0.5">
+                <span class="leading-none {% if match.status == 'FINISHED' and match.home_score < match.away_score %}opacity-50{% endif %}">{{ match.home_score }}</span>
+                <span class="leading-none {% if match.status == 'FINISHED' and match.away_score < match.home_score %}opacity-50{% endif %}">{{ match.away_score }}</span>
+            </div>
+        {% else %}
+            <!-- Upcoming Odds -->
+            {% if odds %}
+                <div class="hidden sm:flex gap-1 bg-base-200/40 p-1 rounded-xl border border-base-200/50 text-[10px]">
+                    <div class="px-2 py-1 text-center min-w-[36px]">
+                        <span class="block opacity-40 font-medium text-[8px]">1</span>
+                        <span class="font-bold">{{ odds.home_odds }}</span>
+                    </div>
+                    <div class="px-2 py-1 text-center min-w-[36px] border-x border-base-200/50">
+                        <span class="block opacity-40 font-medium text-[8px]">X</span>
+                        <span class="font-bold">{{ odds.draw_odds }}</span>
+                    </div>
+                    <div class="px-2 py-1 text-center min-w-[36px]">
+                        <span class="block opacity-40 font-medium text-[8px]">2</span>
+                        <span class="font-bold">{{ odds.away_odds }}</span>
+                    </div>
+                </div>
+            {% endif %}
+        {% endif %}
+    </div>
+
+    <!-- Far Right: AI Recommendation & Confidence dial -->
+    <div class="flex items-center gap-3 pl-2 border-l border-base-200/50 flex-shrink-0">
+        {% if match.prediction %}
+            <div class="flex flex-col items-end gap-1">
+                <span class="text-[9px] font-bold uppercase tracking-wider text-primary opacity-90 truncate max-w-[80px]">
+                    {{ match.prediction.recommended_pick }}
+                </span>
+                <div class="flex items-center gap-1.5">
+                    <span class="text-xs font-black {% if match.prediction.confidence_score >= 80 %}text-emerald-400{% elif match.prediction.confidence_score >= 65 %}text-warning{% else %}text-info{% endif %}">
+                        {{ match.prediction.confidence_score }}%
+                    </span>
+                    <span class="text-[8px] opacity-40 font-bold uppercase">AI</span>
+                </div>
+            </div>
+        {% else %}
+            <span class="text-[9px] opacity-40 italic">No AI Tips</span>
+        {% endif %}
+        
+        <!-- Chevron -->
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 opacity-30 group-hover:opacity-80 transition-opacity duration-200 text-base-content" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+        </svg>
+    </div>
+
 </div>
 {% endwith %}

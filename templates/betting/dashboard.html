@@ -65,7 +65,7 @@
          hx-trigger="load"
          hx-target="this"
          hx-indicator="#tips-list-indicator">
-        <!-- Loaded dynamically via HTMX -->
+        {% include 'components/skeleton.html' with type='match_list' %}
     </div>
 </div>
 
