@@ -18,7 +18,7 @@
             <!-- Subtle shimmer line -->
             <div class="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-emerald-400/40 to-transparent"></div>
 
-            <div class="relative z-10 flex items-center justify-between gap-4 px-4 md:px-6 py-4 md:py-5">
+            <div class="relative z-10 flex items-center justify-between flex-wrap gap-4 px-4 md:px-6 py-4 md:py-5">
                 <!-- Left: Balance Info -->
                 <div class="space-y-0.5 min-w-0">
                     <div class="flex items-center gap-2">
@@ -50,11 +50,11 @@
                 <div class="flex gap-2 flex-shrink-0">
                     <a href="{% url 'wallet:deposit' %}"
                        class="btn btn-sm border-0 bg-gradient-to-r from-emerald-400 to-teal-400 hover:from-emerald-500 hover:to-teal-500 text-slate-950 font-black px-4 md:px-6 rounded-xl shadow-lg shadow-emerald-500/20 active:scale-95 transition-all duration-150">
-                        📥 <span class="hidden sm:inline">Deposit</span>
+                        📥 <span class="">Deposit</span>
                     </a>
                     <a href="{% url 'wallet:withdraw' %}"
                        class="btn btn-sm btn-outline border-emerald-500/40 text-emerald-300 hover:bg-emerald-500/10 hover:border-emerald-400 px-4 md:px-6 rounded-xl active:scale-95 transition-all duration-150">
-                        📤 <span class="hidden sm:inline">Withdraw</span>
+                        📤 <span class="">Withdraw</span>
                     </a>
                 </div>
             </div>

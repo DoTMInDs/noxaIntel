@@ -36,8 +36,8 @@ if env('DEBUG'):
 environ.Env.read_env(BASE_DIR / '.env')
 SECRET_KEY = env('SECRET_KEY')
 
-# DEBUG = env('DEBUG')
-DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+DEBUG = env('DEBUG')
+# DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
 ALLOWED_HOSTS = env('ALLOWED_HOSTS')
 # ── Trusted origins (required for CSRF when behind reverse-proxies / ngrok) ──
@@ -183,7 +183,7 @@ USE_I18N = True
 USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 MEDIA_URL = 'media/'
