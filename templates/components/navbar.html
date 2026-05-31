@@ -66,6 +66,10 @@
                     </li>
                     <li><a href="{% url 'users:profile' %}" class="py-3">👤 My Profile</a></li>
                     <li><a href="{% url 'notifications:list' %}" class="py-3 justify-between">🔔 Notifications</a></li>
+                    <!-- Admin Link (only for staff) -->
+                    {% if user.is_staff %}
+                        <li><a href="{% url 'admin:index' %}" class="py-3">⚙️ Admin Panel</a></li>
+                    {% endif %}
                     <li class="border-t border-base-200 mt-2 pt-2">
                         <form action="{% url 'users:logout' %}" method="post" class="w-full">
                             {% csrf_token %}
