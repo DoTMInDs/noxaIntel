@@ -142,8 +142,12 @@ class BetSelection(models.Model):
         ('HOME_WIN', 'Home Win (1)'),
         ('DRAW', 'Draw (X)'),
         ('AWAY_WIN', 'Away Win (2)'),
+        ('OVER_1_5', 'Over 1.5'),
+        ('UNDER_1_5', 'Under 1.5'),
         ('OVER_2_5', 'Over 2.5'),
         ('UNDER_2_5', 'Under 2.5'),
+        ('OVER_3_5', 'Over 3.5'),
+        ('UNDER_3_5', 'Under 3.5'),
         ('BTTS_YES', 'BTTS Yes'),
         ('BTTS_NO', 'BTTS No'),
     ]

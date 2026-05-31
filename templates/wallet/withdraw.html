@@ -284,6 +284,18 @@
             selectMomo('MTN', 'MTN Mobile Money', mtnCard);
         }
         switchPayoutTab('MOBILE_MONEY');
+
+        // Prevent duplicate form submission
+        const form = document.getElementById('withdraw_form');
+        if (form) {
+            form.addEventListener('submit', function() {
+                const submitBtn = form.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.innerHTML = '<span class="loading loading-spinner loading-xs"></span> Processing Payout...';
+                }
+            });
+        }
     });
 </script>
 {% endblock %}

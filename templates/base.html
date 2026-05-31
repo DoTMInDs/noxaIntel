@@ -16,6 +16,14 @@
     <link rel="apple-touch-icon" sizes="180x180" href="{% static 'imgs/icons/icon-180x180.png' %}">
     
 
+    <script>
+        // Set the theme as early as possible to prevent flicker
+        (function() {
+            const savedTheme = localStorage.getItem('theme') || 'night';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+        })();
+    </script>
+
     <!-- Tailwind CSS & DaisyUI -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css" rel="stylesheet" type="text/css" />
@@ -32,6 +40,18 @@
             backdrop-filter: blur(12px);
             -webkit-backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        [data-theme="light"] .glass-panel {
+            background: rgba(255, 255, 255, 0.65);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+        }
+        /* Hide scrollbars utility */
+        .scrollbar-none {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+        .scrollbar-none::-webkit-scrollbar {
+            display: none;  /* Chrome, Safari and Opera */
         }
         /* Custom scrollbars */
         ::-webkit-scrollbar {
@@ -114,6 +134,39 @@
         {% include 'components/bottom_nav.html' %}
     {% endif %}
 
+    <!-- Global Theme Switcher Script -->
+    <script>
+        const themeToggleBtn = document.getElementById('theme-toggle');
+        const lightIcon = document.getElementById('theme-toggle-light-icon');
+        const darkIcon = document.getElementById('theme-toggle-dark-icon');
+
+        function updateThemeUI(theme) {
+            if (!lightIcon || !darkIcon) return;
+            if (theme === 'light') {
+                lightIcon.classList.add('hidden');
+                darkIcon.classList.remove('hidden');
+            } else {
+                darkIcon.classList.add('hidden');
+                lightIcon.classList.remove('hidden');
+            }
+        }
+
+        // Initialize UI
+        const currentTheme = localStorage.getItem('theme') || 'night';
+        updateThemeUI(currentTheme);
+
+        if (themeToggleBtn) {
+            themeToggleBtn.addEventListener('click', () => {
+                const activeTheme = document.documentElement.getAttribute('data-theme');
+                const newTheme = activeTheme === 'night' ? 'light' : 'night';
+                
+                document.documentElement.setAttribute('data-theme', newTheme);
+                localStorage.setItem('theme', newTheme);
+                updateThemeUI(newTheme);
+            });
+        }
+    </script>
+    
     {% block extra_js %}{% endblock %}
 </body>
 </html>

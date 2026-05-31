@@ -29,13 +29,13 @@
     width: 100%;
     max-width: 680px;
     margin: 0 auto;
-    background: #0f172a; /* Night theme background */
-    border-left: 1px solid rgba(255,255,255,0.05);
-    border-right: 1px solid rgba(255,255,255,0.05);
+    background: var(--fallback-b1,oklch(var(--b1)));
+    border-left: 1px solid var(--fallback-bc,oklch(var(--bc)/0.08));
+    border-right: 1px solid var(--fallback-bc,oklch(var(--bc)/0.08));
     position: relative;
     overflow: hidden;
   }
-
+ 
   /* ── Top Bar ── */
   #va-topbar {
     flex-shrink: 0;
@@ -43,13 +43,13 @@
     align-items: center;
     justify-content: space-between;
     padding: 12px 16px;
-    background: rgba(15, 23, 42, 0.85); /* Sleek translucent glass top bar */
+    background: var(--fallback-b1,oklch(var(--b1)/0.85));
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border-bottom: 1px solid rgba(255,255,255,0.06);
+    border-bottom: 1px solid var(--fallback-bc,oklch(var(--bc)/0.08));
     z-index: 10;
   }
-
+ 
   .va-avatar {
     width: 36px;
     height: 36px;
@@ -59,18 +59,18 @@
     align-items: center;
     justify-content: center;
     font-size: 16px;
-    box-shadow: 0 0 12px rgba(124,58,237,0.5);
+    box-shadow: 0 0 12px rgba(124,58,237,0.3);
     flex-shrink: 0;
   }
-
+ 
   .va-title-block h1 {
     font-size: 15px;
     font-weight: 700;
-    color: #f0f6ff;
+    color: var(--fallback-bc,oklch(var(--bc)));
     margin: 0;
     line-height: 1.2;
   }
-
+ 
   .va-title-block span {
     font-size: 11px;
     color: #4ade80;
@@ -78,7 +78,7 @@
     align-items: center;
     gap: 4px;
   }
-
+ 
   .va-online-dot {
     width: 6px;
     height: 6px;
@@ -86,25 +86,25 @@
     border-radius: 50%;
     animation: blink-dot 2s ease-in-out infinite;
   }
-
+ 
   @keyframes blink-dot {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.3; }
   }
-
+ 
   /* Topbar icon buttons */
   .va-icon-btn {
     width: 34px;
     height: 34px;
     border-radius: 50%;
-    background: rgba(255,255,255,0.06);
-    border: 1px solid rgba(255,255,255,0.08);
+    background: var(--fallback-b2,oklch(var(--b2)));
+    border: 1px solid var(--fallback-bc,oklch(var(--bc)/0.1));
     display: flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
     transition: background 0.15s;
-    color: #94a3b8;
+    color: var(--fallback-bc,oklch(var(--bc)/0.6));
     flex-shrink: 0;
   }
 
@@ -165,19 +165,19 @@
   }
 
   .va-bubble.ai-bubble {
-    background: rgba(255,255,255,0.07);
-    border: 1px solid rgba(255,255,255,0.08);
+    background: var(--fallback-b2,oklch(var(--b2)));
+    border: 1px solid var(--fallback-bc,oklch(var(--bc)/0.1));
     border-bottom-left-radius: 6px;
-    color: #e2e8f0;
+    color: var(--fallback-bc,oklch(var(--bc)));
   }
-
+ 
   .va-bubble.user-bubble {
     background: linear-gradient(135deg, #7c3aed, #4f46e5);
     border-bottom-right-radius: 6px;
     color: #fff;
-    box-shadow: 0 4px 16px rgba(124,58,237,0.35);
+    box-shadow: 0 4px 16px rgba(124,58,237,0.3);
   }
-
+ 
   .va-bubble ul {
     list-style: none;
     margin: 8px 0 0;
@@ -186,31 +186,31 @@
     flex-direction: column;
     gap: 5px;
   }
-
+ 
   .va-bubble ul li::before { content: "→ "; opacity: 0.6; }
-
+ 
   /* Timestamp */
   .va-time {
     font-size: 10px;
-    color: rgba(255,255,255,0.3);
+    color: var(--fallback-bc,oklch(var(--bc)/0.4));
     margin-top: 4px;
     text-align: right;
   }
-
+ 
   .user-row .va-time { text-align: left; }
-
+ 
   /* ── Loading Indicator ── */
   #va-loading {
     display: none;
     padding: 8px 12px 0;
   }
-
+ 
   .va-typing-bubble {
     display: inline-flex;
     align-items: center;
     gap: 4px;
-    background: rgba(255,255,255,0.07);
-    border: 1px solid rgba(255,255,255,0.08);
+    background: var(--fallback-b2,oklch(var(--b2)));
+    border: 1px solid var(--fallback-bc,oklch(var(--bc)/0.1));
     padding: 10px 16px;
     border-radius: 20px;
     border-bottom-left-radius: 6px;
@@ -274,10 +274,10 @@
   /* ── Bottom Bar ── */
   #va-bottombar {
     flex-shrink: 0;
-    background: rgba(15, 23, 42, 0.88); /* Translucent glass bottom input bar */
+    background: var(--fallback-b1,oklch(var(--b1)/0.88));
     backdrop-filter: blur(20px);
     -webkit-backdrop-filter: blur(20px);
-    border-top: 1px solid rgba(255,255,255,0.07);
+    border-top: 1px solid var(--fallback-bc,oklch(var(--bc)/0.1));
     padding: 10px 12px 10px;
     padding-bottom: max(10px, env(safe-area-inset-bottom));
   }
@@ -319,18 +319,18 @@
 
   #chat-input-field {
     flex: 1;
-    background: rgba(255,255,255,0.07);
-    border: 1px solid rgba(255,255,255,0.1);
+    background: var(--fallback-b2,oklch(var(--b2)));
+    border: 1px solid var(--fallback-bc,oklch(var(--bc)/0.1));
     border-radius: 24px;
     padding: 11px 18px;
     font-size: 14px;
-    color: #f0f6ff;
+    color: var(--fallback-bc,oklch(var(--bc)));
     outline: none;
     transition: border-color 0.2s;
     min-width: 0;
   }
 
-  #chat-input-field::placeholder { color: rgba(255,255,255,0.3); }
+  #chat-input-field::placeholder { color: var(--fallback-bc,oklch(var(--bc)/0.4)); }
   #chat-input-field:focus { border-color: rgba(124,58,237,0.6); }
 
   /* Send button */
@@ -395,7 +395,7 @@
     flex-direction: column;
     gap: 8px;
     padding: 12px 4px 4px;
-    border-top: 1px solid rgba(255,255,255,0.06);
+    border-top: 1px solid var(--fallback-bc,oklch(var(--bc)/0.1));
     margin-top: 8px;
   }
 
@@ -406,7 +406,7 @@
     align-items: center;
     justify-content: space-between;
     font-size: 13px;
-    color: #94a3b8;
+    color: var(--fallback-bc,oklch(var(--bc)/0.6));
   }
 
   /* Toggle pill */
@@ -421,7 +421,7 @@
   .va-toggle-slider {
     position: absolute;
     inset: 0;
-    background: rgba(255,255,255,0.12);
+    background: var(--fallback-bc,oklch(var(--bc)/0.12));
     border-radius: 999px;
     cursor: pointer;
     transition: background 0.2s;

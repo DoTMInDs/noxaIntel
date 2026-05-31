@@ -102,10 +102,18 @@ def place_bet(request):
         'HOME_WIN': 'HOME_WIN',
         'DRAW': 'DRAW',
         'AWAY_WIN': 'AWAY_WIN',
+        'O1.5': 'OVER_1_5',
+        'OVER_1_5': 'OVER_1_5',
+        'U1.5': 'UNDER_1_5',
+        'UNDER_1_5': 'UNDER_1_5',
         'O2.5': 'OVER_2_5',
         'OVER_2_5': 'OVER_2_5',
         'U2.5': 'UNDER_2_5',
         'UNDER_2_5': 'UNDER_2_5',
+        'O3.5': 'OVER_3_5',
+        'OVER_3_5': 'OVER_3_5',
+        'U3.5': 'UNDER_3_5',
+        'UNDER_3_5': 'UNDER_3_5',
         'BTTS_YES': 'BTTS_YES',
         'BTTS_NO': 'BTTS_NO',
     }
@@ -143,10 +151,22 @@ def place_bet(request):
             odds_val = odds_snapshot.draw_odds or Decimal('1.00')
         elif market == 'AWAY_WIN':
             odds_val = odds_snapshot.away_odds or Decimal('1.00')
+        elif market == 'OVER_1_5':
+            # Scale from 2.5
+            odds_val = Decimal(str(max(1.05, round(float(odds_snapshot.over_2_5_odds or 1.90) * 0.7, 2))))
+        elif market == 'UNDER_1_5':
+            # Scale from 2.5
+            odds_val = Decimal(str(round(float(odds_snapshot.under_2_5_odds or 1.90) * 1.5, 2)))
         elif market == 'OVER_2_5':
             odds_val = odds_snapshot.over_2_5_odds or Decimal('1.00')
         elif market == 'UNDER_2_5':
             odds_val = odds_snapshot.under_2_5_odds or Decimal('1.00')
+        elif market == 'OVER_3_5':
+            # Scale from 2.5
+            odds_val = Decimal(str(round(float(odds_snapshot.over_2_5_odds or 1.90) * 1.6, 2)))
+        elif market == 'UNDER_3_5':
+            # Scale from 2.5
+            odds_val = Decimal(str(max(1.05, round(float(odds_snapshot.under_2_5_odds or 1.90) * 0.65, 2))))
         elif market == 'BTTS_YES':
             odds_val = odds_snapshot.btts_yes_odds or Decimal('1.00')
         elif market == 'BTTS_NO':

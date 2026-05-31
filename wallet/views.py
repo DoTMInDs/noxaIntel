@@ -237,7 +237,8 @@ def withdraw_request(request):
                 return redirect('wallet:withdraw_simulate', pk=wr.id)
 
             # Outside demo: call celery worker or proceed immediately
-            rec_res = paystack.create_transfer_recipient(bank_code, account_number, account_name)
+            recipient_type = 'mobile_money' if payout_type == WithdrawalRequest.MOBILE_MONEY else 'ghipss'
+            rec_res = paystack.create_transfer_recipient(bank_code, account_number, account_name, recipient_type=recipient_type)
             if rec_res.get('ok'):
                 recipient_code = rec_res['recipient_code']
                 wr.paystack_recipient_code = recipient_code

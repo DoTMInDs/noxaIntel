@@ -47,8 +47,9 @@ def analytics_dashboard(request):
     populate_mock_data_if_empty()
 
     # Get latest records for charts and grids
-    accuracy_reports = ModelAccuracyReport.objects.all()[:15]
-    cache_metrics = CacheMetrics.objects.all()[:15]
+    # Evaluate querysets to lists immediately — avoids "Cannot filter a sliced queryset" errors
+    accuracy_reports = list(ModelAccuracyReport.objects.all()[:15])
+    cache_metrics = list(CacheMetrics.objects.all()[:15])
 
     # Calculate overall KPIs based on latest snapshots
     latest_reports = accuracy_reports[:3]

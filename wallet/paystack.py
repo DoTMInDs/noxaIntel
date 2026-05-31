@@ -99,8 +99,21 @@ def list_banks(country: str = 'ghana') -> list:
         return []
 
 
+def _map_bank_code(bank_code: str) -> str:
+    """Map internal bank/momo codes to official Paystack codes for Ghana."""
+    mapping = {
+        'VDF': 'VOD',         # Telecel Cash (formerly Vodafone)
+        'VODAFONE': 'VOD',
+        'MTN_MOMO': 'MTN',
+        'AIRTELTIGO': 'ATL',
+        'AIR': 'ATL',
+    }
+    return mapping.get(bank_code.upper(), bank_code)
+
+
 def verify_account_number(account_number: str, bank_code: str) -> dict:
     """Resolve account number to get the account holder's name."""
+    bank_code = _map_bank_code(bank_code)
     try:
         r = requests.get(
             f'{PAYSTACK_BASE}/bank/resolve',
@@ -118,10 +131,11 @@ def verify_account_number(account_number: str, bank_code: str) -> dict:
         return {'ok': False, 'message': str(e)}
 
 
-def create_transfer_recipient(bank_code: str, account_number: str, account_name: str) -> dict:
+def create_transfer_recipient(bank_code: str, account_number: str, account_name: str, recipient_type: str = 'ghipss') -> dict:
     """Create a Paystack transfer recipient for a user's bank account."""
+    bank_code = _map_bank_code(bank_code)
     payload = {
-        'type': 'ghipss',  # Ghana Interbank Payment and Settlement System
+        'type': recipient_type,  # 'ghipss' or 'mobile_money'
         'name': account_name,
         'account_number': account_number,
         'bank_code': bank_code,
