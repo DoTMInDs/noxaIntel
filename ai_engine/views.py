@@ -1,4 +1,5 @@
-from django.shortcuts import render
+from django.shortcuts import render, redirect
+from django.urls import reverse
 from django.contrib.auth.decorators import login_required
 from services.ai_chat_service import AIChatService
 
@@ -23,4 +24,14 @@ def assistant_query(request):
         'user_message': user_message,
         'ai_response': ai_response,
     })
+
+@login_required
+def assistant_history(request):
+    """HTMX endpoint to retrieve the conversation history bubbles."""
+    history = AIChatService.get_conversation_history(request.user.id)
+    return render(request, 'ai_engine/partials/history_messages.html', {
+        'history': history,
+        'user': request.user
+    })
+
 

@@ -1,0 +1,519 @@
+<!-- Floating AI Copilot Widget -->
+<div id="copilot-widget" class="relative">
+
+    <!-- Floating Action Button (FAB) -->
+    <button id="copilot-fab" onclick="toggleCopilotWidget()" 
+            class="fixed bottom-24 right-4 md:bottom-6 md:right-6 z-50 btn btn-circle btn-lg border-0 shadow-2xl bg-gradient-to-tr from-purple-600 via-indigo-600 to-cyan-500 hover:scale-105 active:scale-95 transition-all duration-300 flex items-center justify-center">
+        <div class="relative flex items-center justify-center">
+            <!-- Sparkles/Orb animation -->
+            <span class="absolute inline-flex h-full w-full rounded-full bg-purple-400 opacity-30 animate-ping"></span>
+            <!-- Icon -->
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+            </svg>
+        </div>
+    </button>
+
+    <!-- Expandable Chat Panel -->
+    <div id="copilot-panel" 
+         class="fixed bottom-24 right-4 md:bottom-20 md:right-6 z-40 flex flex-col bg-base-100/90 border border-base-200 shadow-2xl rounded-2xl w-[calc(100vw-2rem)] sm:w-[420px] h-[550px] max-h-[calc(100vh-8rem)] transition-all duration-300 transform scale-95 opacity-0 pointer-events-none backdrop-blur-md overflow-hidden">
+        
+        <!-- Header -->
+        <div class="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-purple-900/60 to-indigo-900/60 border-b border-base-200/50">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-full bg-gradient-to-tr from-purple-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-purple-500/20 text-base">⚡</div>
+                <div>
+                    <h2 class="text-sm font-bold text-white tracking-wide">NoxaIntel AI Copilot</h2>
+                    <div class="flex items-center gap-1">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span class="text-[10px] text-emerald-400 font-medium">Analyst Active</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Window Controls -->
+            <div class="flex items-center gap-1">
+                <!-- Minimize Button -->
+                <button onclick="toggleMinimize()" class="btn btn-ghost btn-xs btn-circle text-white/70 hover:bg-white/10 hover:text-white" title="Minimize">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                </button>
+                <!-- Maximize Button -->
+                <button id="copilot-maximize-btn" onclick="toggleMaximize()" class="btn btn-ghost btn-xs btn-circle text-white/70 hover:bg-white/10 hover:text-white" title="Toggle Full Width">
+                    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                    </svg>
+                </button>
+                <!-- Close Button -->
+                <button onclick="toggleCopilotWidget()" class="btn btn-ghost btn-xs btn-circle text-white/70 hover:bg-white/10 hover:text-white" title="Close">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Chat Container Content (Collapsible when minimized) -->
+        <div id="copilot-collapsible" class="flex flex-col flex-1 min-h-0">
+            
+            <!-- Message List -->
+            <div id="copilot-msg-area" class="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-thin scroll-smooth">
+                <!-- Greeting -->
+                <div class="chat chat-start">
+                    <div class="chat-image avatar placeholder">
+                        <div class="bg-primary/10 border border-primary/20 rounded-full w-8 flex items-center justify-center shadow-sm">
+                            <span class="text-sm">🤖</span>
+                        </div>
+                    </div>
+                    <div class="chat-header opacity-40 text-[9px] mb-0.5">NoxaIntel AI</div>
+                    <div class="chat-bubble chat-bubble-neutral text-xs leading-relaxed max-w-[85%] bg-base-200 border border-base-300 text-base-content">
+                        Hey {{ user.username|capfirst }}! 👋 I am your AI Copilot.<br><br>
+                        I analyze matches, compute winning probabilities, give betting insights, standings, and check your active bets. Speak to me or type below.
+                    </div>
+                </div>
+
+                <!-- Async History Loader -->
+                <div hx-get="{% url 'ai_engine:history' %}" 
+                     hx-trigger="load" 
+                     hx-target="this" 
+                     hx-swap="outerHTML">
+                    <div class="flex justify-center p-2"><span class="loading loading-dots loading-xs text-primary"></span></div>
+                </div>
+            </div>
+
+            <!-- Loader Indicator -->
+            <div id="copilot-loading" class="hidden px-4 py-2 bg-base-200/30">
+                <div class="flex items-center gap-2">
+                    <span class="loading loading-dots loading-sm text-purple-500"></span>
+                    <span class="text-[10px] opacity-50 font-medium">Analyzing football data...</span>
+                </div>
+            </div>
+
+            <!-- Speech Listening Banner -->
+            <div id="copilot-listening-banner" class="hidden items-center justify-between px-4 py-2.5 bg-purple-500/10 border-t border-purple-500/20 text-purple-400">
+                <div class="flex items-center gap-2">
+                    <span class="flex h-2 w-2 relative">
+                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                        <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                    </span>
+                    <span class="text-xs font-bold tracking-wider uppercase animate-pulse">Listening...</span>
+                </div>
+                <span class="text-[10px] opacity-60">Release mic to analyze</span>
+            </div>
+
+            <!-- Suggestions Panel -->
+            <div class="px-3 py-2 bg-base-200/50 border-t border-base-200/50 overflow-x-auto flex gap-1.5 scrollbar-none">
+                <button onclick="copilotSuggestion('Analyze live EPL matches')" class="btn btn-xs btn-outline btn-primary rounded-full font-medium text-[10px] whitespace-nowrap">🔴 Live Match Lookup</button>
+                <button onclick="copilotSuggestion('Who is likely to win Arsenal vs Liverpool?')" class="btn btn-xs btn-outline btn-secondary rounded-full font-medium text-[10px] whitespace-nowrap">🔮 Match Prediction</button>
+                <button onclick="copilotSuggestion('Show the safest bets today')" class="btn btn-xs btn-outline btn-accent rounded-full font-medium text-[10px] whitespace-nowrap">🟢 Safe Bets</button>
+                <button onclick="copilotSuggestion('What is my wallet balance?')" class="btn btn-xs btn-outline rounded-full font-medium text-[10px] whitespace-nowrap border-base-content/20 hover:border-base-content/40">💰 Check Balance</button>
+            </div>
+
+            <!-- Footer / Forms -->
+            <div class="p-3 bg-base-200 border-t border-base-200/60 flex flex-col gap-2">
+                <form id="copilot-form" 
+                      hx-post="{% url 'ai_engine:query_partial' %}" 
+                      hx-target="#copilot-msg-area" 
+                      hx-swap="beforeend"
+                      hx-on::before-request="onQueryStart()"
+                      hx-on::after-request="onQueryEnd()">
+                    {% csrf_token %}
+                    <div class="flex items-center gap-2">
+                        <!-- Voice Mic Button -->
+                        <button type="button" id="copilot-mic-btn" class="btn btn-circle btn-primary shadow-lg border-0 transition-transform active:scale-95" title="Hold to Speak">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                            </svg>
+                        </button>
+                        
+                        <!-- Text Input -->
+                        <input type="text" id="copilot-input" name="message" required autocomplete="off" placeholder="Ask details, predictions, standings..." 
+                               class="input input-bordered input-sm flex-1 rounded-full text-xs bg-base-100 focus:outline-none focus:border-primary/80" />
+                        
+                        <!-- Send Button -->
+                        <button type="submit" class="btn btn-circle btn-sm btn-primary">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+                            </svg>
+                        </button>
+                    </div>
+                </form>
+
+                <!-- TTS / Wake-Word Options -->
+                <div class="flex items-center justify-between px-1 text-[10px] opacity-70">
+                    <label class="flex items-center gap-1 cursor-pointer">
+                        <input type="checkbox" id="copilot-tts" checked class="checkbox checkbox-xs checkbox-primary" />
+                        <span>🔊 Read Aloud (TTS)</span>
+                    </label>
+                    <label class="flex items-center gap-1 cursor-pointer">
+                        <input type="checkbox" id="copilot-wake" onchange="toggleCopilotWakeWord()" class="checkbox checkbox-xs checkbox-primary" />
+                        <span>🎤 "Hey Bet" wake-word</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Premium style enhancements */
+    .scrollbar-none::-webkit-scrollbar {
+        display: none;
+    }
+    .scrollbar-none {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+    .scrollbar-thin::-webkit-scrollbar {
+        width: 4px;
+    }
+    .scrollbar-thin::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .scrollbar-thin::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.1);
+        border-radius: 99px;
+    }
+    #copilot-panel.panel-open {
+        opacity: 1 !important;
+        pointer-events: auto !important;
+        transform: scale(1) !important;
+    }
+    #copilot-panel.panel-minimized {
+        height: 58px !important;
+        overflow: hidden !important;
+    }
+    #copilot-panel.panel-maximized {
+        width: min(600px, calc(100vw - 2rem)) !important;
+        height: min(750px, calc(100vh - 6rem)) !important;
+    }
+</style>
+
+<script>
+    // State Persistence
+    const COPILOT_STATE_KEY = 'noxa_copilot_state';
+    
+    function saveCopilotState() {
+        const panel = document.getElementById('copilot-panel');
+        const state = {
+            isOpen: panel.classList.contains('panel-open'),
+            isMinimized: panel.classList.contains('panel-minimized'),
+            isMaximized: panel.classList.contains('panel-maximized'),
+            ttsChecked: document.getElementById('copilot-tts').checked,
+            wakeChecked: document.getElementById('copilot-wake').checked
+        };
+        localStorage.setItem(COPILOT_STATE_KEY, JSON.stringify(state));
+    }
+
+    function loadCopilotState() {
+        try {
+            const raw = localStorage.getItem(COPILOT_STATE_KEY);
+            if (!raw) return;
+            const state = JSON.parse(raw);
+            const panel = document.getElementById('copilot-panel');
+            
+            if (state.isOpen) {
+                panel.classList.add('panel-open');
+                document.getElementById('copilot-fab').classList.add('scale-0', 'opacity-0');
+            }
+            if (state.isMinimized) {
+                panel.classList.add('panel-minimized');
+                document.getElementById('copilot-collapsible').classList.add('hidden');
+            }
+            if (state.isMaximized) {
+                panel.classList.add('panel-maximized');
+            }
+            document.getElementById('copilot-tts').checked = !!state.ttsChecked;
+            document.getElementById('copilot-wake').checked = !!state.wakeChecked;
+            if (state.wakeChecked) {
+                setTimeout(startWakeListener, 1000);
+            }
+        } catch (e) {
+            console.error('Failed to load copilot state:', e);
+        }
+    }
+
+    // Toggle widgets
+    window.toggleCopilotWidget = function() {
+        const panel = document.getElementById('copilot-panel');
+        const fab = document.getElementById('copilot-fab');
+        panel.classList.toggle('panel-open');
+        
+        if (panel.classList.contains('panel-open')) {
+            fab.classList.add('scale-0', 'opacity-0');
+            // If minimized when opening, restore
+            if (panel.classList.contains('panel-minimized')) {
+                toggleMinimize();
+            }
+            scrollCopilotBottom();
+        } else {
+            fab.classList.remove('scale-0', 'opacity-0');
+        }
+        saveCopilotState();
+    };
+
+    window.toggleCopilotWidgetOpen = function() {
+        const panel = document.getElementById('copilot-panel');
+        const fab = document.getElementById('copilot-fab');
+        if (!panel.classList.contains('panel-open')) {
+            panel.classList.add('panel-open');
+            fab.classList.add('scale-0', 'opacity-0');
+            scrollCopilotBottom();
+            saveCopilotState();
+        }
+    };
+
+    window.toggleMinimize = function() {
+        const panel = document.getElementById('copilot-panel');
+        const collapsible = document.getElementById('copilot-collapsible');
+        panel.classList.toggle('panel-minimized');
+        if (panel.classList.contains('panel-minimized')) {
+            collapsible.classList.add('hidden');
+        } else {
+            collapsible.classList.remove('hidden');
+            scrollCopilotBottom();
+        }
+        saveCopilotState();
+    };
+
+    window.toggleMaximize = function() {
+        const panel = document.getElementById('copilot-panel');
+        const maxBtn = document.getElementById('copilot-maximize-btn');
+        panel.classList.toggle('panel-maximized');
+        
+        if (panel.classList.contains('panel-maximized')) {
+            maxBtn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 14h6v6m10-6h-6v6M4 10h6V4m10 6h-6V4"/></svg>`;
+        } else {
+            maxBtn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect></svg>`;
+        }
+        scrollCopilotBottom();
+        saveCopilotState();
+    };
+
+    window.toggleMinimizeWidget = function() {
+        const panel = document.getElementById('copilot-panel');
+        if (panel.classList.contains('panel-open') && !panel.classList.contains('panel-minimized')) {
+            toggleMinimize();
+        }
+    };
+
+    // Sidebar integration trigger
+    window.toggleCopilotWidgetFromSidebar = function() {
+        toggleCopilotWidget();
+    };
+    
+    // Wire up sidebar global click if it is modified
+    window.toggleCopilotWidget = window.toggleCopilotWidget || function() {};
+    // Override the sidebar global link variable if toggleCopilotWidget was referenced in sidebar
+    window.toggleCopilotWidget = toggleCopilotWidget;
+    window.toggleCopilotWidgetOpen = toggleCopilotWidgetOpen;
+
+    // Chat scroll helpers
+    function scrollCopilotBottom() {
+        const area = document.getElementById('copilot-msg-area');
+        if (area) {
+            setTimeout(() => {
+                area.scrollTop = area.scrollHeight;
+            }, 50);
+        }
+    }
+
+    function copilotSuggestion(text) {
+        const input = document.getElementById('copilot-input');
+        input.value = text;
+        input.focus();
+    }
+
+    function onQueryStart() {
+        document.getElementById('copilot-loading').classList.remove('hidden');
+        document.getElementById('copilot-input').value = '';
+        scrollCopilotBottom();
+    }
+
+    function onQueryEnd() {
+        document.getElementById('copilot-loading').classList.add('hidden');
+        scrollCopilotBottom();
+    }
+
+    // TTS Voice synthesis
+    window.speakCopilotResponse = function(text) {
+        if (!window.speechSynthesis || !document.getElementById('copilot-tts').checked) return;
+        window.speechSynthesis.cancel();
+        
+        // Strip emojis and clean up formatting
+        const clean = text.replace(/[🤖⚽🔒👑⚡⭐🟢📅•]/g, '').replace(/\n/g, ' ');
+        const utterance = new SpeechSynthesisUtterance(clean);
+        utterance.rate = 1.05;
+        utterance.pitch = 1.0;
+        const englishVoice = speechSynthesis.getVoices().find(v => v.lang.startsWith('en'));
+        if (englishVoice) utterance.voice = englishVoice;
+        window.speechSynthesis.speak(utterance);
+    };
+
+    // HTMX message response speech hook
+    document.body.addEventListener('htmx:afterRequest', function(e) {
+        if (e.detail.elt.id === 'copilot-form') {
+            scrollCopilotBottom();
+        }
+    });
+
+    // Audio input (Speech recognition)
+    const SpeechAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let commandRecognizer = null;
+    let wakeWordRecognizer = null;
+    let isCommandActive = false;
+    let isWakeWordActive = false;
+
+    if (SpeechAPI) {
+        commandRecognizer = new SpeechAPI();
+        commandRecognizer.continuous = false;
+        commandRecognizer.lang = 'en-US';
+        commandRecognizer.interimResults = false;
+        commandRecognizer.maxAlternatives = 1;
+
+        commandRecognizer.onstart = function() {
+            isCommandActive = true;
+            document.getElementById('copilot-mic-btn').classList.add('bg-red-500', 'scale-95');
+            document.getElementById('copilot-listening-banner').classList.remove('hidden');
+            document.getElementById('copilot-listening-banner').classList.add('flex');
+        };
+
+        commandRecognizer.onresult = function(e) {
+            const transcript = e.results[0][0].transcript;
+            document.getElementById('copilot-input').value = transcript;
+            htmx.trigger(document.getElementById('copilot-form'), 'submit');
+        };
+
+        commandRecognizer.onerror = function() {
+            resetCopilotMicUI();
+        };
+
+        commandRecognizer.onend = function() {
+            resetCopilotMicUI();
+            if (document.getElementById('copilot-wake').checked) {
+                startWakeListener();
+            }
+        };
+
+        // Wake word listener
+        wakeWordRecognizer = new SpeechAPI();
+        wakeWordRecognizer.continuous = false;
+        wakeWordRecognizer.lang = 'en-US';
+        wakeWordRecognizer.interimResults = true;
+
+        wakeWordRecognizer.onresult = function(e) {
+            for (let i = e.resultIndex; i < e.results.length; i++) {
+                const text = e.results[i][0].transcript.toLowerCase();
+                if (text.includes('hey bet') || text.includes('hay bet') || text.includes('ay bet') || text.includes('hello bet')) {
+                    playBeepSound();
+                    wakeWordRecognizer.abort();
+                    // Open the widget and start listening
+                    toggleCopilotWidgetOpen();
+                    setTimeout(() => {
+                        try { commandRecognizer.start(); } catch(_) {}
+                    }, 300);
+                    break;
+                }
+            }
+        };
+
+        wakeWordRecognizer.onerror = function(e) {
+            if (e.error !== 'no-speech' && e.error !== 'aborted') {
+                console.warn('WakeWord Listener Error:', e.error);
+            }
+        };
+
+        wakeWordRecognizer.onend = function() {
+            if (isWakeWordActive && document.getElementById('copilot-wake').checked && !isCommandActive) {
+                try { wakeWordRecognizer.start(); } catch(_) {}
+            }
+        };
+    } else {
+        const mic = document.getElementById('copilot-mic-btn');
+        if (mic) {
+            mic.disabled = true;
+            mic.title = "Voice recognition not supported in this browser";
+            mic.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+    }
+
+    function resetCopilotMicUI() {
+        isCommandActive = false;
+        const btn = document.getElementById('copilot-mic-btn');
+        if (btn) btn.classList.remove('bg-red-500', 'scale-95');
+        const banner = document.getElementById('copilot-listening-banner');
+        if (banner) {
+            banner.classList.add('hidden');
+            banner.classList.remove('flex');
+        }
+    }
+
+    function startWakeListener() {
+        if (!wakeWordRecognizer) return;
+        isWakeWordActive = true;
+        try { wakeWordRecognizer.start(); } catch(_) {}
+    }
+
+    function stopWakeListener() {
+        isWakeWordActive = false;
+        if (wakeWordRecognizer) wakeWordRecognizer.abort();
+    }
+
+    window.toggleCopilotWakeWord = function() {
+        const chk = document.getElementById('copilot-wake');
+        if (chk.checked) {
+            startWakeListener();
+        } else {
+            stopWakeListener();
+        }
+        saveCopilotState();
+    };
+
+    function playBeepSound() {
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const g = ctx.createGain();
+            osc.connect(g);
+            g.connect(ctx.destination);
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(587, ctx.currentTime); // D5
+            osc.frequency.setValueAtTime(880, ctx.currentTime + 0.1); // A5
+            g.gain.setValueAtTime(0.08, ctx.currentTime);
+            g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+            osc.start();
+            osc.stop(ctx.currentTime + 0.35);
+        } catch (_) {}
+    }
+
+    // Touch events for speech recording (push-to-talk)
+    function startVoiceRec() {
+        if (!commandRecognizer || isCommandActive) return;
+        stopWakeListener();
+        if (window.speechSynthesis) window.speechSynthesis.cancel();
+        try { commandRecognizer.start(); } catch(_) {}
+    }
+
+    function stopVoiceRec() {
+        if (commandRecognizer && isCommandActive) {
+            commandRecognizer.stop();
+        }
+    }
+
+    const micBtn = document.getElementById('copilot-mic-btn');
+    if (micBtn) {
+        micBtn.addEventListener('mousedown', (e) => { e.preventDefault(); startVoiceRec(); });
+        micBtn.addEventListener('mouseup', (e) => { e.preventDefault(); stopVoiceRec(); });
+        micBtn.addEventListener('mouseleave', () => { stopVoiceRec(); });
+        micBtn.addEventListener('touchstart', (e) => { e.preventDefault(); startVoiceRec(); }, { passive: false });
+        micBtn.addEventListener('touchend', (e) => { e.preventDefault(); stopVoiceRec(); }, { passive: false });
+    }
+
+    // Auto-scroll on load
+    window.addEventListener('load', () => {
+        loadCopilotState();
+        scrollCopilotBottom();
+    });
+</script>

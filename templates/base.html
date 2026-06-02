@@ -131,7 +131,10 @@
     
     {% if user.is_authenticated %}
         {% include 'components/betslip_drawer.html' %}
-        {% include 'components/bottom_nav.html' %}
+        {% if request.resolver_match.view_name != 'ai_engine:chat' %}
+            {% include 'components/bottom_nav.html' %}
+            {% include 'components/copilot_widget.html' %}
+        {% endif %}
     {% endif %}
 
     <!-- Global Theme Switcher Script -->

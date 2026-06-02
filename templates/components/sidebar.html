@@ -22,8 +22,8 @@
                     </a>
                 </li>
                 <li>
-                    <a href="{% url 'ai_engine:chat' %}" class="flex items-center gap-3 py-3 px-4 rounded-xl transition-all duration-200 {% if 'ai_engine' in active_route %}active bg-primary text-primary-content shadow-lg shadow-primary/15 font-semibold{% else %}hover:bg-base-200{% endif %}">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <a href="{% url 'ai_engine:chat' %}" class="flex items-center gap-3 py-3 px-4 rounded-xl transition-all duration-200 {% if 'ai_engine' in active_route %}active bg-primary text-primary-content shadow-lg shadow-primary/15 font-semibold{% else %}hover:bg-base-200 text-base-content/85{% endif %}">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
                         </svg>
                         <span>AI Assistant</span>

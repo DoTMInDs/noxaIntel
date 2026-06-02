@@ -1,0 +1,37 @@
+{% for msg in history %}
+    {% if msg.sender == 'user' %}
+        <div class="chat chat-end animate-fade-in mt-2">
+            <div class="chat-image avatar placeholder">
+                <div class="bg-neutral-focus text-neutral-content rounded-full w-8 border border-neutral-content/10 shadow-sm flex items-center justify-center bg-neutral">
+                    <span class="text-[10px] font-bold">{{ user.username|slice:":2"|upper }}</span>
+                </div>
+            </div>
+            <div class="chat-header opacity-40 text-[9px] mb-0.5">You</div>
+            <div class="chat-bubble chat-bubble-primary text-xs font-medium max-w-[85%] leading-relaxed shadow-sm">
+                {{ msg.text }}
+            </div>
+        </div>
+    {% else %}
+        <div class="chat chat-start animate-fade-in mt-2">
+            <div class="chat-image avatar placeholder">
+                <div class="bg-primary/10 border border-primary/20 rounded-full w-8 flex items-center justify-center shadow-sm">
+                    <span class="text-sm">🤖</span>
+                </div>
+            </div>
+            <div class="chat-header opacity-40 text-[9px] mb-0.5">NoxaIntel AI</div>
+            <div class="chat-bubble chat-bubble-neutral text-xs max-w-[85%] leading-relaxed shadow-sm bg-base-200 border border-base-300 text-base-content">
+                {{ msg.text|linebreaksbr }}
+            </div>
+        </div>
+    {% endif %}
+{% endfor %}
+
+<script>
+    // Hook to speak the very last AI response in history on page transitions if it's new
+    (function() {
+        const area = document.getElementById('copilot-msg-area');
+        if (area) {
+            area.scrollTop = area.scrollHeight;
+        }
+    })();
+</script>

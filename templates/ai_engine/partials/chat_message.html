@@ -32,8 +32,10 @@
             </div>
         </div>
         <script>
-            if (window.speakResponse && document.getElementById('tts-toggle') && document.getElementById('tts-toggle').checked) {
-                // Strip emoji and format-specific characters from synthesized text
+            if (window.speakCopilotResponse && document.getElementById('copilot-tts') && document.getElementById('copilot-tts').checked) {
+                let cleanText = `{{ ai_response|escapejs }}`.replace(/[🤖⚽🔒👑⚡⭐🟢📅•]/g, '').replace(/\\n/g, ' ');
+                window.speakCopilotResponse(cleanText);
+            } else if (window.speakResponse && document.getElementById('tts-toggle') && document.getElementById('tts-toggle').checked) {
                 let cleanText = `{{ ai_response|escapejs }}`.replace(/[🤖⚽🔒👑⚡⭐🟢📅•]/g, '').replace(/\\n/g, ' ');
                 window.speakResponse(cleanText);
             }
