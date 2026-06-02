@@ -22,7 +22,7 @@ def _get_vapid_private_key_pem() -> str:
         return raw  # Already PEM string
 
 
-def send_push_notification(user, title: str, body: str, url: str = '/', icon: str = '/static/icons/icon-192.png'):
+def send_push_notification(user, title: str, body: str, url: str = '/', icon: str = '/static/imgs/icons/icon-192x192.png'):
     """
     Send a Web Push notification to all of a user's active subscriptions.
 
@@ -37,18 +37,18 @@ def send_push_notification(user, title: str, body: str, url: str = '/', icon: st
 
     subscriptions = PushSubscription.objects.filter(user=user)
     if not subscriptions.exists():
+        logger.debug(f"No push subscriptions for user {user.username} — skipping push")
         return
 
     vapid_claims = {"sub": f"mailto:{settings.VAPID_ADMIN_EMAIL}"}
     private_key_pem = _get_vapid_private_key_pem()
-    vapid_public_key = settings.VAPID_PUBLIC_KEY
 
     payload = json.dumps({
         "title": title,
         "body": body,
         "url": url,
         "icon": icon,
-        "badge": "/static/icons/badge-72.png",
+        "badge": "/static/imgs/icons/icon-72x72.png",
         "tag": "noxaintel-alert",
         "renotify": True,
     })

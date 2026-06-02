@@ -1,4 +1,4 @@
-const CACHE_NAME = 'noxaintel-cache-v1';
+const CACHE_NAME = 'noxaintel-cache-v2';
 const OFFLINE_URL = '/pwa/offline/';
 
 const ASSETS_TO_CACHE = [
@@ -7,7 +7,7 @@ const ASSETS_TO_CACHE = [
     'https://cdn.tailwindcss.com',
     'https://cdn.jsdelivr.net/npm/daisyui@4.12.10/dist/full.min.css',
     'https://unpkg.com/htmx.org@1.9.10',
-    'https://img.icons8.com/fluency/192/000000/soccer-ball.png'
+    '/static/imgs/icons/icon-192x192.png'
 ];
 
 self.addEventListener('install', (event) => {
@@ -74,8 +74,8 @@ self.addEventListener('push', function(event) {
             const title = data.title || 'NoxaIntel Alert';
             const options = {
                 body: data.body || '',
-                icon: data.icon || 'https://img.icons8.com/fluency/192/000000/soccer-ball.png',
-                badge: 'https://img.icons8.com/fluency/72/000000/soccer-ball.png',
+                icon: data.icon || '/static/imgs/icons/icon-192x192.png',
+                badge: '/static/imgs/icons/icon-72x72.png',
                 vibrate: [100, 50, 100],
                 data: {
                     url: data.url || '/'
@@ -89,7 +89,7 @@ self.addEventListener('push', function(event) {
             event.waitUntil(
                 self.registration.showNotification('NoxaIntel Alert', {
                     body: text,
-                    icon: 'https://img.icons8.com/fluency/192/000000/soccer-ball.png',
+                    icon: '/static/imgs/icons/icon-192x192.png',
                     data: {
                         url: '/'
                     }
