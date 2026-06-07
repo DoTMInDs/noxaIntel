@@ -32,23 +32,26 @@ def send_daily_notifications():
     })
 
     subscriptions = PushSubscription.objects.select_related('user').all()
+    notified_users = set()
     sent = 0
     failed = 0
     for sub in subscriptions:
+        user = sub.user
+        if user.id in notified_users:
+            continue
         try:
             send_push_notification(
-                endpoint=sub.endpoint,
-                auth=sub.auth,
-                p256dh=sub.p256dh,
-                payload=payload,
-                ttl=86400,  # 1 day
+                user=user,
+                title="NoxaIntel Daily Tip",
+                body=f"Your AI‑powered soccer tip for {now:%A %b %d, %H:%M}",
+                url="/"
             )
+            notified_users.add(user.id)
             sent += 1
         except Exception as exc:  # pragma: no cover – production will log
             logger.error(
-                "Failed to push to %s (%s): %s",
-                sub.user.username,
-                sub.endpoint[:40],
+                "Failed to push to %s: %s",
+                user.username,
                 exc,
             )
             failed += 1

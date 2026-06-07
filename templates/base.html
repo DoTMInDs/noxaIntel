@@ -76,10 +76,72 @@
         .htmx-request.htmx-indicator {
             display: block !important;
         }
+        
+        /* Launch Screen Animations */
+        @keyframes progress {
+            0% { width: 0%; }
+            100% { width: 100%; }
+        }
+        .animate-progress {
+            animation: progress 1.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        @keyframes pulse-glow {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 15px rgba(16, 185, 129, 0.2); }
+            50% { transform: scale(1.05); box-shadow: 0 0 30px rgba(16, 185, 129, 0.4); }
+        }
+        .animate-pulse-glow {
+            animation: pulse-glow 2s infinite ease-in-out;
+        }
     </style>
     {% block extra_head %}{% endblock %}
 </head>
 <body class="bg-base-300 text-base-content h-[100dvh] overflow-hidden flex flex-col" hx-headers='{"X-CSRFToken": "{{ csrf_token }}"}'>
+    <!-- Launch Screen (Mobile-First & Premium) -->
+    <div id="launch-screen" class="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-slate-950 text-white transition-opacity duration-500 ease-in-out">
+        <div class="flex flex-col items-center space-y-6 px-4 text-center">
+            <!-- Pulsing/Glowing Logo container -->
+            <div class="relative flex items-center justify-center w-24 h-24 rounded-full bg-slate-900 border border-slate-800 shadow-2xl animate-pulse-glow">
+                <span class="text-5xl select-none animate-bounce">⚽</span>
+                <!-- Spinning dashed outer ring -->
+                <div class="absolute inset-0 rounded-full border border-dashed border-emerald-500/30 animate-spin" style="animation-duration: 8s;"></div>
+            </div>
+            
+            <div class="space-y-1.5">
+                <h1 class="text-4xl font-black tracking-wider bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-400 bg-clip-text text-transparent">
+                    NoxaIntel
+                </h1>
+                <p class="text-[10px] font-semibold text-slate-400 uppercase tracking-[0.3em]">
+                    AI Soccer Betting Analysis
+                </p>
+            </div>
+            
+            <!-- Loading indicator -->
+            <div class="w-36 h-[3px] bg-slate-900 rounded-full overflow-hidden border border-slate-800/50">
+                <div class="h-full bg-gradient-to-r from-emerald-400 to-cyan-400 rounded-full animate-progress"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const launchScreen = document.getElementById('launch-screen');
+            if (launchScreen) {
+                // Show only once per browser session to ensure high-performance navigation
+                if (sessionStorage.getItem('launchScreenShown')) {
+                    launchScreen.remove();
+                } else {
+                    sessionStorage.setItem('launchScreenShown', 'true');
+                    setTimeout(() => {
+                        launchScreen.classList.add('opacity-0');
+                        setTimeout(() => {
+                            launchScreen.remove();
+                        }, 500);
+                    }, 1400); // 1.4s display time
+                }
+            }
+        });
+    </script>
+
     <!-- Top Navbar -->
     {% include 'components/navbar.html' %}
 

@@ -5,6 +5,7 @@ import os
 from pathlib import Path
 import environ
 from decimal import Decimal
+from celery.schedules import crontab
 
 from dotenv import load_dotenv
 
@@ -226,6 +227,10 @@ CELERY_BEAT_SCHEDULE = {
     'precompute-predictions-every-1h': {
         'task': 'ai_engine.tasks.precompute_upcoming_predictions',
         'schedule': 3600.0,
+    },
+    'send-daily-notifications-12-and-6': {
+        'task': 'notifications.tasks.send_daily_notifications',
+        'schedule': crontab(hour='12,18', minute=0),
     },
 }
 
