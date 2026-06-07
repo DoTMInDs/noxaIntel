@@ -8,7 +8,7 @@ class CustomUserCreationForm(UserCreationForm):
         max_length=20, 
         required=True,
         label="Phone Number",
-        widget=forms.TextInput(attrs={'class': 'input input-bordered w-full', 'placeholder': 'e.g. +1234567890'})
+        widget=forms.TextInput(attrs={'type': 'tel', 'class': 'input input-bordered w-full', 'placeholder': 'e.g. +1234567890'})
     )
     email = forms.EmailField(
         required=True,
@@ -34,6 +34,7 @@ class CustomAuthenticationForm(AuthenticationForm):
         if 'username' in self.fields:
             self.fields['username'].label = "Phone Number"
             self.fields['username'].widget.attrs.update({
+                'type': 'tel',
                 'placeholder': 'e.g. +1234567890',
                 'class': 'input input-bordered w-full bg-base-300/40 focus:border-primary'
             })

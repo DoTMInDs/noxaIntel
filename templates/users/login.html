@@ -16,7 +16,7 @@
             </div>
 
             <!-- Form -->
-            <form method="post" action="{% url 'users:login' %}" class="space-y-4">
+            <form method="post" action="{% url 'users:login' %}" class="space-y-4" id="login-form">
                 {% csrf_token %}
                 
                 {% if form.non_field_errors %}
@@ -27,27 +27,55 @@
                     </div>
                 {% endif %}
 
-                {% for field in form %}
-                    <div class="form-control w-full space-y-1">
-                        <label class="label py-1">
-                            <span class="label-text font-semibold opacity-75">{{ field.label }}</span>
-                        </label>
-                        {{ field }}
-                        {% if field.errors %}
-                            <label class="label py-0">
-                                <span class="label-text-alt text-error font-medium">{{ field.errors.0 }}</span>
-                            </label>
-                        {% endif %}
-                        {% if field.help_text %}
-                            <label class="label py-0">
-                                <span class="label-text-alt opacity-40">{{ field.help_text|safe }}</span>
-                            </label>
-                        {% endif %}
+                <!-- Phone Number / Username -->
+                <div class="form-control w-full space-y-1">
+                    <label class="label py-1">
+                        <span class="label-text font-semibold opacity-75">Phone Number</span>
+                    </label>
+                    <div class="relative flex items-center">
+                        <span class="absolute left-4 z-10 text-emerald-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-6 15h9" />
+                            </svg>
+                        </span>
+                        <input type="tel" name="username" id="id_username" required placeholder="e.g. +1234567890" class="input input-bordered w-full pl-12 bg-base-300/40 focus:border-emerald-400 focus:outline-none" value="{{ form.username.value|default:'' }}">
                     </div>
-                {% endfor %}
+                    {% if form.username.errors %}
+                        <label class="label py-0">
+                            <span class="label-text-alt text-error font-medium">{{ form.username.errors.0 }}</span>
+                        </label>
+                    {% endif %}
+                </div>
 
-                <button type="submit" class="btn btn-primary w-full mt-4 font-bold text-base shadow-lg shadow-primary/20">
-                    Sign In
+                <!-- Password -->
+                <div class="form-control w-full space-y-1">
+                    <label class="label py-1">
+                        <span class="label-text font-semibold opacity-75">Password</span>
+                    </label>
+                    <div class="relative flex items-center">
+                        <span class="absolute left-4 z-10 text-emerald-400">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+                            </svg>
+                        </span>
+                        <input type="password" name="password" id="id_password" required placeholder="Enter your password" class="input input-bordered w-full pl-12 pr-12 bg-base-300/40 focus:border-emerald-400 focus:outline-none">
+                        <button type="button" onclick="togglePasswordVisibility('id_password', this)" class="absolute right-4 z-10 text-slate-400 hover:text-white focus:outline-none">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                            </svg>
+                        </button>
+                    </div>
+                    {% if form.password.errors %}
+                        <label class="label py-0">
+                            <span class="label-text-alt text-error font-medium">{{ form.password.errors.0 }}</span>
+                        </label>
+                    {% endif %}
+                </div>
+
+                <button type="submit" id="submit-btn" class="btn btn-primary w-full mt-6 font-bold text-base shadow-lg shadow-primary/20 flex items-center justify-center gap-2">
+                    <span id="btn-text">Sign In</span>
+                    <span id="btn-spinner" class="loading loading-spinner hidden"></span>
                 </button>
             </form>
 
@@ -63,9 +91,36 @@
 </div>
 
 <script>
-    // Dynamically style form fields to match DaisyUI theme
-    document.querySelectorAll('form input[type="text"], form input[type="password"]').forEach(input => {
-        input.classList.add('input', 'input-bordered', 'w-full', 'bg-base-300/40', 'focus:border-primary');
+    function togglePasswordVisibility(inputId, button) {
+        const input = document.getElementById(inputId);
+        if (input.type === 'password') {
+            input.type = 'text';
+            button.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 0 0 1.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.451 10.451 0 0 1 12 4.5c4.756 0 8.773 3.162 10.065 7.498a10.522 10.522 0 0 1-4.293 5.774M6.228 6.228 3 3m3.228 3.228 3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 1 0-4.243-4.243m4.242 4.242L9.88 9.88" />
+                </svg>
+            `;
+        } else {
+            input.type = 'password';
+            button.innerHTML = `
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+                </svg>
+            `;
+        }
+    }
+
+    const loginForm = document.getElementById('login-form');
+    loginForm.addEventListener('submit', () => {
+        const btn = document.getElementById('submit-btn');
+        const text = document.getElementById('btn-text');
+        const spinner = document.getElementById('btn-spinner');
+        if (btn) {
+            btn.classList.add('btn-disabled');
+            btn.setAttribute('disabled', 'true');
+            spinner.classList.remove('hidden');
+        }
     });
 </script>
 {% endblock %}
