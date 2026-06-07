@@ -81,6 +81,7 @@ class Transaction(models.Model):
     BET_REFUND = 'BET_REFUND'
     CASHOUT = 'CASHOUT'
     BONUS = 'BONUS'
+    COMMISSION = 'COMMISSION'
     TYPE_CHOICES = [
         (DEPOSIT, 'Deposit'),
         (WITHDRAWAL, 'Withdrawal'),
@@ -89,6 +90,7 @@ class Transaction(models.Model):
         (BET_REFUND, 'Bet Refund'),
         (CASHOUT, 'Cash Out'),
         (BONUS, 'Bonus'),
+        (COMMISSION, 'Commission'),
     ]
 
     # Statuses

@@ -123,29 +123,48 @@ def settle_betslip(slip_id):
                 max_payout = getattr(settings, 'MAX_PAYOUT', Decimal('100000.00'))
                 payout = min(payout, max_payout)
 
+                # Calculate winning commission
+                win_comm_rate = getattr(settings, 'BET_WIN_COMMISSION_RATE', Decimal('0.10'))
+                win_commission = payout * win_comm_rate
+                net_payout = payout - win_commission
+
                 slip.status = 'WON'
-                slip.actual_payout = payout
+                slip.actual_payout = net_payout
                 slip.settled_at = timezone.now()
                 slip.save(update_fields=['status', 'actual_payout', 'settled_at'])
 
-                # Credit user wallet atomically
+                # Credit user wallet atomically with net payout
                 wallet = Wallet.objects.select_for_update().get(user=slip.user)
                 balance_before = wallet.balance
-                wallet.balance += payout
+                wallet.balance += net_payout
                 wallet.save(update_fields=['balance', 'updated_at'])
 
-                # Create BET_WIN Transaction
+                # Create BET_WIN Transaction for gross winnings
                 tx_ref = f"NXW-{uuid.uuid4().hex[:12].upper()}"
                 tx = Transaction.objects.create(
                     wallet=wallet,
                     type=Transaction.BET_WIN,
                     amount=payout,
                     balance_before=balance_before,
-                    balance_after=wallet.balance,
+                    balance_after=balance_before + payout,
                     status=Transaction.COMPLETED,
                     reference=tx_ref,
-                    description=f"Winnings for Bet #{slip.id}",
+                    description=f"Winnings for Bet #{slip.id} (Gross)",
                     meta={'bet_slip_id': slip.id, 'odds': float(final_odds)}
+                )
+
+                # Create COMMISSION Transaction for 10% deduction
+                comm_ref = f"NXWC-{uuid.uuid4().hex[:12].upper()}"
+                comm_tx = Transaction.objects.create(
+                    wallet=wallet,
+                    type=Transaction.COMMISSION,
+                    amount=win_commission,
+                    balance_before=balance_before + payout,
+                    balance_after=wallet.balance,
+                    status=Transaction.COMPLETED,
+                    reference=comm_ref,
+                    description=f"10% Win Commission on Bet #{slip.id}",
+                    meta={'bet_slip_id': slip.id, 'gross_payout': float(payout), 'commission_rate': float(win_comm_rate)}
                 )
 
                 # Set transaction relation on the slip
@@ -157,7 +176,7 @@ def settle_betslip(slip_id):
                     notify_user(
                         user=slip.user,
                         title="Bet Settled: WON! 🎉",
-                        body=f"Congratulations! Your Bet #{slip.id} ({slip.slip_type}) won! GHS {payout:.2f} credited to your wallet.",
+                        body=f"Congratulations! Your Bet #{slip.id} ({slip.slip_type}) won! GHS {net_payout:.2f} (credited net of 10% commission) was added to your wallet.",
                         notification_type='PREDICTION',
                         url='/bet/my-bets/'
                     )

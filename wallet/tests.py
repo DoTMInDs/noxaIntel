@@ -79,6 +79,8 @@ def run_tests():
     # 5. Test Placing Bet (Atomic debit & transaction creation)
     print("\n[+] 5. Placing GHS 10.00 wager on Home Win (Kumasi Asante Kotoko)...")
     stake = Decimal('10.00')
+    commission = stake * Decimal('0.05')
+    total_deduction = stake + commission
     
     # Simulating the place_bet atomic logic
     from django.db import transaction as db_tx
@@ -88,19 +90,32 @@ def run_tests():
         
         # Debit balance
         balance_before = locked_wallet.balance
-        locked_wallet.balance -= stake
+        locked_wallet.balance -= total_deduction
         locked_wallet.save()
         
-        # Transaction log
+        # Transaction log for stake
         tx = Transaction.objects.create(
             wallet=locked_wallet,
             type=Transaction.BET_STAKE,
             amount=stake,
             balance_before=balance_before,
-            balance_after=locked_wallet.balance,
+            balance_after=balance_before - stake,
             status=Transaction.COMPLETED,
             reference="TX-TEST-STAKE-001",
             description=f"Wager on Match #{match.id}"
+        )
+
+        # Transaction log for commission
+        comm_tx = Transaction.objects.create(
+            wallet=locked_wallet,
+            type=Transaction.COMMISSION,
+            amount=commission,
+            balance_before=balance_before - stake,
+            balance_after=locked_wallet.balance,
+            status=Transaction.COMPLETED,
+            reference="TX-TEST-COMM-001",
+            description=f"5% Bet Placement Commission on Bet Stake",
+            meta={'commission_rate': 0.05}
         )
         
         # Bet Slip
@@ -125,7 +140,7 @@ def run_tests():
 
     wallet.refresh_from_db()
     print(f"   [OK] SUCCESS: Bet slip #{slip.id} submitted!")
-    print(f"      New Wallet Balance: GHS {wallet.balance} (Debited: GHS {stake})")
+    print(f"      New Wallet Balance: GHS {wallet.balance} (Debited: GHS {stake} stake + GHS {commission} commission)")
     print(f"      Est. Potential Payout: GHS {slip.potential_payout}")
 
     # 6. Test Early Payout (Cash Out) calculation
@@ -151,7 +166,7 @@ def run_tests():
     
     print(f"   [OK] Selections status: {sel.result}")
     print(f"   [OK] Bet Slip status: {slip.status}")
-    print(f"   [OK] Final Wallet Balance: GHS {wallet.balance} (Credited Winnings: GHS {slip.actual_payout})")
+    print(f"   [OK] Final Wallet Balance: GHS {wallet.balance} (Credited Net Winnings: GHS {slip.actual_payout})")
 
     # 8. Transaction Log Audit
     print("\n[+] 8. Ledger Audit Trail check:")

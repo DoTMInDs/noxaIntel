@@ -257,3 +257,8 @@ MAX_PAYOUT = Decimal('100000.00')    # GHS 100,000 maximum potential payout
 MIN_DEPOSIT = Decimal('3.00')        # GHS 3.00 minimum deposit
 MIN_WITHDRAWAL = Decimal('3.00')     # GHS 3.00 minimum withdrawal
 
+# Commission Rates
+BET_PLACEMENT_COMMISSION_RATE = Decimal('0.05')  # 5% commission on bet placement
+BET_WIN_COMMISSION_RATE = Decimal('0.10')       # 10% commission on winnings
+
+

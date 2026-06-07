@@ -194,25 +194,44 @@ def place_bet(request):
         with db_tx.atomic():
             wallet = Wallet.objects.select_for_update().get(user=request.user)
             
-            if wallet.balance < stake:
-                return JsonResponse({'ok': False, 'message': f'Insufficient balance. Current: GHS {wallet.balance:.2f}'}, status=400)
+            # Calculate commission
+            placement_comm_rate = getattr(settings, 'BET_PLACEMENT_COMMISSION_RATE', Decimal('0.05'))
+            commission = stake * placement_comm_rate
+            total_deduction = stake + commission
+
+            if wallet.balance < total_deduction:
+                return JsonResponse({'ok': False, 'message': f'Insufficient balance. Current: GHS {wallet.balance:.2f} (Required: GHS {total_deduction:.2f} including 5% commission)'}, status=400)
 
             # Debit wallet balance
             balance_before = wallet.balance
-            wallet.balance -= stake
+            wallet.balance -= total_deduction
             wallet.save(update_fields=['balance', 'updated_at'])
 
-            # Create Transaction ledger
+            # Create Transaction ledger for stake
             tx_ref = f"NXB-{uuid.uuid4().hex[:12].upper()}"
             tx = Transaction.objects.create(
                 wallet=wallet,
                 type=Transaction.BET_STAKE,
                 amount=stake,
                 balance_before=balance_before,
-                balance_after=wallet.balance,
+                balance_after=balance_before - stake,
                 status=Transaction.COMPLETED,
                 reference=tx_ref,
                 description=f"Bet Slip Stake GHS {stake:.2f} ({slip_type})",
+            )
+
+            # Create Transaction ledger for placement commission
+            comm_ref = f"NXC-{uuid.uuid4().hex[:12].upper()}"
+            comm_tx = Transaction.objects.create(
+                wallet=wallet,
+                type=Transaction.COMMISSION,
+                amount=commission,
+                balance_before=balance_before - stake,
+                balance_after=wallet.balance,
+                status=Transaction.COMPLETED,
+                reference=comm_ref,
+                description=f"5% Bet Placement Commission on Bet Stake",
+                meta={'bet_slip_id': None, 'commission_rate': float(placement_comm_rate)}
             )
 
             # Create BetSlip
@@ -225,6 +244,10 @@ def place_bet(request):
                 potential_payout=potential_payout,
                 transaction=tx,
             )
+
+            # Link commission transaction to the created BetSlip
+            comm_tx.meta['bet_slip_id'] = slip.id
+            comm_tx.save(update_fields=['meta'])
 
             # Create Selections
             for s in selections_to_create:
