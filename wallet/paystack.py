@@ -24,6 +24,18 @@ def _headers():
     }
 
 
+def _handle_request_exception(e: requests.RequestException) -> str:
+    """Extract a user-friendly error message from a Paystack RequestException response if possible."""
+    if e.response is not None:
+        try:
+            data = e.response.json()
+            if isinstance(data, dict) and 'message' in data:
+                return data['message']
+        except (ValueError, TypeError, KeyError):
+            pass
+    return str(e)
+
+
 def ghs_to_pesewas(amount: Decimal) -> int:
     """Convert GHS amount to integer pesewas for Paystack."""
     return int(Decimal(str(amount)) * 100)
@@ -56,7 +68,7 @@ def initialize_transaction(amount_ghs: Decimal, email: str, reference: str, call
         return {'ok': False, 'message': data.get('message', 'Unknown error')}
     except requests.RequestException as e:
         logger.error(f'Paystack initialize_transaction error: {e}')
-        return {'ok': False, 'message': str(e)}
+        return {'ok': False, 'message': _handle_request_exception(e)}
 
 
 def verify_transaction(reference: str) -> dict:
@@ -79,7 +91,7 @@ def verify_transaction(reference: str) -> dict:
         return {'ok': False, 'message': data['data'].get('gateway_response', 'Payment not successful')}
     except requests.RequestException as e:
         logger.error(f'Paystack verify_transaction error: {e}')
-        return {'ok': False, 'message': str(e)}
+        return {'ok': False, 'message': _handle_request_exception(e)}
 
 
 def list_banks(country: str = 'ghana') -> list:
@@ -95,7 +107,7 @@ def list_banks(country: str = 'ghana') -> list:
         data = r.json()
         return data.get('data', [])
     except requests.RequestException as e:
-        logger.error(f'Paystack list_banks error: {e}')
+        logger.error(f'Paystack list_banks error: {_handle_request_exception(e)}')
         return []
 
 
@@ -128,7 +140,7 @@ def verify_account_number(account_number: str, bank_code: str) -> dict:
         return {'ok': False, 'message': data.get('message', 'Could not resolve account')}
     except requests.RequestException as e:
         logger.error(f'Paystack verify_account error: {e}')
-        return {'ok': False, 'message': str(e)}
+        return {'ok': False, 'message': _handle_request_exception(e)}
 
 
 def create_transfer_recipient(bank_code: str, account_number: str, account_name: str, recipient_type: str = 'ghipss') -> dict:
@@ -150,7 +162,7 @@ def create_transfer_recipient(bank_code: str, account_number: str, account_name:
         return {'ok': False, 'message': data.get('message', 'Could not create recipient')}
     except requests.RequestException as e:
         logger.error(f'Paystack create_transfer_recipient error: {e}')
-        return {'ok': False, 'message': str(e)}
+        return {'ok': False, 'message': _handle_request_exception(e)}
 
 
 def initiate_transfer(amount_ghs: Decimal, recipient_code: str, reason: str, reference: str = None) -> dict:
@@ -179,7 +191,7 @@ def initiate_transfer(amount_ghs: Decimal, recipient_code: str, reason: str, ref
         return {'ok': False, 'message': data.get('message', 'Transfer failed')}
     except requests.RequestException as e:
         logger.error(f'Paystack initiate_transfer error: {e}')
-        return {'ok': False, 'message': str(e)}
+        return {'ok': False, 'message': _handle_request_exception(e)}
 
 
 def verify_webhook_signature(payload_bytes: bytes, signature: str) -> bool:
