@@ -148,38 +148,80 @@
   // Strategy: wait for `navigator.serviceWorker.ready` (guaranteed active SW),
   // then confirm pushManager is available before resolving.
   async function getReadySW() {
-    const reg = await navigator.serviceWorker.ready;
+    if (!('serviceWorker' in navigator)) {
+      throw new Error('Service Worker not supported');
+    }
+
+    // 1. Try to find an existing registration first to avoid ready hang
+    let reg = await navigator.serviceWorker.getRegistration('/');
+    if (!reg) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      if (regs && regs.length > 0) {
+        reg = regs[0];
+      }
+    }
+
+    if (reg) {
+      if (reg.active) {
+        if (!reg.pushManager) throw new Error('PushManager not available on this SW registration');
+        return reg;
+      }
+      const activeWorker = reg.active || reg.waiting || reg.installing;
+      if (activeWorker) {
+        await new Promise((resolve) => {
+          if (activeWorker.state === 'activated') {
+            resolve();
+          } else {
+            activeWorker.addEventListener('statechange', (e) => {
+              if (e.target.state === 'activated') resolve();
+            });
+          }
+        });
+        if (!reg.pushManager) throw new Error('PushManager not available on this SW registration');
+        return reg;
+      }
+    }
+
+    // 2. Fallback to ready with a 6-second timeout so it never hangs indefinitely
+    const readyPromise = navigator.serviceWorker.ready;
+    const timeoutPromise = new Promise((_, reject) =>
+      setTimeout(() => reject(new Error('Service Worker ready timeout')), 6000)
+    );
+
+    reg = await Promise.race([readyPromise, timeoutPromise]);
     if (!reg.pushManager) throw new Error('PushManager not available on this SW registration');
     return reg;
   }
 
   // ── Core subscribe flow ───────────────────────────────────────────────────
   async function subscribe(silent) {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
       if (!silent) statusEl.textContent = '❌ Not supported';
       return false;
     }
 
     try {
+      // 1. Request permission FIRST to keep the user gesture context active.
+      // Awaiting service worker ready beforehand destroys the user gesture activation on Safari/iOS.
+      if (!silent) {
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+          statusEl.textContent = '❌ Denied';
+          if (permission === 'denied') hidePrompt(true); // don't ask again
+          return false;
+        }
+      } else if (Notification.permission !== 'granted') {
+        // Silent mode but permission not yet granted — do nothing
+        return false;
+      }
+
+      // 2. Now get the ready service worker and subscribe
       const reg = await getReadySW();
 
       // Check for an existing subscription first — avoid double-subscribing
       let subscription = await reg.pushManager.getSubscription();
 
       if (!subscription) {
-        // Need to request a new one — requires user permission
-        if (!silent) {
-          const permission = await Notification.requestPermission();
-          if (permission !== 'granted') {
-            statusEl.textContent = '❌ Denied';
-            if (permission === 'denied') hidePrompt(true); // don't ask again
-            return false;
-          }
-        } else if (Notification.permission !== 'granted') {
-          // Silent mode but permission not yet granted — do nothing
-          return false;
-        }
-
         subscription = await reg.pushManager.subscribe({
           userVisibleOnly: true,
           applicationServerKey: urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
