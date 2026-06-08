@@ -150,6 +150,7 @@ class BetSelection(models.Model):
         ('UNDER_3_5', 'Under 3.5'),
         ('BTTS_YES', 'BTTS Yes'),
         ('BTTS_NO', 'BTTS No'),
+        ('CORRECT_SCORE', 'Correct Score'),
     ]
 
     RESULT_CHOICES = [

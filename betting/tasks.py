@@ -36,6 +36,16 @@ def settle_match_bets(match_id):
     away_score = match.away_score if match.away_score is not None else 0
     total_goals = home_score + away_score
 
+    # Try to load the AI predicted score for correct score settlement
+    try:
+        from predictions.models import Prediction
+        prediction = Prediction.objects.get(match=match)
+        pred_home = prediction.predicted_home_score
+        pred_away = prediction.predicted_away_score
+    except Exception:
+        pred_home = None
+        pred_away = None
+
     # Determine outcomes
     outcomes = {
         'HOME_WIN': home_score > away_score,
@@ -45,6 +55,9 @@ def settle_match_bets(match_id):
         'UNDER_2_5': total_goals < 3,
         'BTTS_YES': home_score > 0 and away_score > 0,
         'BTTS_NO': home_score == 0 or away_score == 0,
+        # Correct score wins if the final score exactly matches AI prediction
+        'CORRECT_SCORE': (pred_home is not None and pred_away is not None
+                          and home_score == pred_home and away_score == pred_away),
     }
 
     # Query all pending selections on this match

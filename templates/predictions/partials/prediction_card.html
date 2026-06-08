@@ -1,339 +1,410 @@
+<style>
+  /* 22bet-style teal/dark theme local component styling */
+  .sub-tab-22bet {
+    color: rgba(255,255,255,0.4);
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.35rem 0.75rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .sub-tab-22bet.active {
+    background: rgba(94,234,212,0.15);
+    color: #5eead4;
+  }
+  
+  .odds-pill {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    gap: 0.5rem;
+    flex: 1;
+    min-width: 0;
+  }
+  .odds-pill:hover {
+    background: rgba(94,234,212,0.12);
+    border-color: rgba(94,234,212,0.35);
+  }
+  .odds-pill.selected, .odds-pill.btn-primary {
+    background: rgba(94,234,212,0.22) !important;
+    border-color: #5eead4 !important;
+  }
+  .odds-pill .pill-label {
+    font-size: 0.7rem;
+    color: rgba(255,255,255,0.5);
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+  }
+  .odds-pill .pill-odds {
+    font-size: 0.85rem;
+    font-weight: 900;
+    color: #5eead4;
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .odds-pill.selected .pill-odds, .odds-pill.btn-primary .pill-odds { color: #fff; }
+
+  .ai-score-card {
+    background: linear-gradient(135deg, rgba(16,185,129,0.12) 0%, rgba(6,78,59,0.15) 100%);
+    border: 1px solid rgba(16,185,129,0.25);
+    border-radius: 14px;
+    padding: 1rem;
+  }
+  .ai-score-display {
+    font-size: 2.2rem;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: 0.05em;
+    font-variant-numeric: tabular-nums;
+  }
+  .ai-score-display .separator {
+    color: rgba(255,255,255,0.35);
+    margin: 0 0.15em;
+  }
+  .place-score-btn {
+    background: linear-gradient(135deg, #10b981, #059669);
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-weight: 900;
+    font-size: 0.78rem;
+    padding: 0.65rem 1rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    width: 100%;
+    letter-spacing: 0.02em;
+  }
+  .place-score-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  .place-score-btn:active { transform: scale(0.98); }
+  .place-score-btn.selected, .place-score-btn.btn-primary {
+    background: linear-gradient(135deg, #5eead4, #14b8a6) !important;
+  }
+  .confidence-ring {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    border: 3px solid rgba(16,185,129,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.65rem; font-weight: 900; color: #10b981;
+    flex-shrink: 0;
+    background: rgba(16,185,129,0.08);
+  }
+  .prob-bar-container { height: 8px; border-radius: 4px; overflow: hidden; background: rgba(255,255,255,0.07); }
+  .prob-bar-home { background: linear-gradient(90deg,#5eead4,#14b8a6); height:100%; border-radius:4px; transition: width 0.5s; }
+  .prob-bar-draw { background: rgba(255,255,255,0.25); height:100%; transition: width 0.5s; }
+  .prob-bar-away { background: linear-gradient(90deg,#a78bfa,#7c3aed); height:100%; border-radius:4px; transition: width 0.5s; }
+</style>
+
 {% if prediction %}
-    {% if prediction.is_vip_only and not user.profile.subscription_tier.access_vip_tips %}
-        <!-- Lock Screen / Upgrade Paywall -->
-        <div class="card bg-base-100 border border-warning/20 shadow-2xl rounded-2xl overflow-hidden relative">
-            <div class="absolute inset-0 bg-base-300/40 backdrop-blur-md z-10 flex flex-col justify-center items-center text-center p-6 space-y-4">
-                <div class="w-16 h-16 rounded-full bg-warning/10 border border-warning/20 flex items-center justify-center text-3xl text-warning animate-bounce">
-                    🔒
-                </div>
-                <h3 class="font-black text-2xl text-base-content tracking-tight">VIP AI Analysis Locked</h3>
-                <p class="text-sm opacity-70 max-w-sm">
-                    This match has a high-confidence rating of <span class="text-warning font-bold">{{ prediction.confidence_score }}%</span>. Upgrade to VIP to view predictions, score ranges, and full tactical models.
-                </p>
-                <div class="pt-2">
-                    <a href="{% url 'users:profile' %}" class="btn btn-warning font-bold btn-wide shadow-lg shadow-warning/10">
-                        🔑 Upgrade to VIP
-                    </a>
-                </div>
-            </div>
-
-            <!-- Blurred Background Content (to tease the user) -->
-            <div class="card-body p-6 space-y-6 opacity-20 select-none pointer-events-none">
-                <h3 class="font-bold text-lg">AI Probability Matrix</h3>
-                <div class="h-12 bg-base-200 rounded-lg"></div>
-                <div class="h-24 bg-base-200 rounded-lg"></div>
-            </div>
-        </div>
-    {% else %}
-        <!-- Full Prediction Data -->
-        <div class="space-y-6">
-            <!-- Probability Matrix Card -->
-            <div class="card bg-base-100 border border-base-200 shadow-xl rounded-2xl">
-                <div class="card-body p-6 space-y-6">
-                    <div class="flex justify-between items-center flex-wrap gap-2">
-                        <h3 class="font-extrabold text-lg text-primary">AI Probability Matrix</h3>
-                        <span class="text-[10px] opacity-40">Refreshed live via model weights</span>
-                    </div>
-
-                    <!-- 1X2 Probabilities Bar -->
-                    <div class="space-y-2.5">
-                        <div class="flex justify-between text-xs font-semibold opacity-75">
-                            <span>Home Win</span>
-                            <span>Draw</span>
-                            <span>Away Win</span>
-                        </div>
-                        <div class="w-full h-8 rounded-xl overflow-hidden flex text-xs font-black text-white text-center">
-                            <div class="bg-primary flex items-center justify-center transition-all duration-300" style="width: {{ prediction.home_win_prob }}%;">
-                                {{ prediction.home_win_prob }}%
-                            </div>
-                            <div class="bg-neutral flex items-center justify-center border-x border-base-100 transition-all duration-300" style="width: {{ prediction.draw_prob }}%;">
-                                {{ prediction.draw_prob }}%
-                            </div>
-                            <div class="bg-secondary flex items-center justify-center transition-all duration-300" style="width: {{ prediction.away_win_prob }}%;">
-                                {{ prediction.away_win_prob }}%
-                            </div>
-                        </div>
-                        <!-- Place Bet buttons for 1X2 -->
-                        {% if match.status != 'LIVE' and match.status != 'FINISHED' %}
-                            {% with match.odds_snapshots.first as odds %}
-                                {% if odds %}
-                                    <div class="grid grid-cols-[repeat(auto-fit,minmax(130px,1fr))] gap-2 pt-1 w-full">
-                                        <button class="odds-btn w-full flex items-center text-nowrap justify-between bg-base-200/50 hover:bg-primary hover:text-white active:scale-95 transition-all duration-150 rounded-xl px-4 py-2.5 border border-base-300/40 hover:border-primary group/btn text-xs"
-                                                onclick="toggleSelection('{{ match.id }}', 'HOME_WIN', '{{ odds.home_odds }}', '{{ match.home_team.name }} vs {{ match.away_team.name }}', this)">
-                                            <span class="font-bold opacity-45 group-[.btn-primary]/btn:opacity-75">1 (Home)</span>
-                                            <span class="font-black tabular-nums">{{ odds.home_odds }}</span>
-                                        </button>
-                                        <button class="odds-btn w-full flex items-center text-nowrap justify-between bg-base-200/50 hover:bg-primary hover:text-white active:scale-95 transition-all duration-150 rounded-xl px-4 py-2.5 border border-base-300/40 hover:border-primary group/btn text-xs"
-                                                onclick="toggleSelection('{{ match.id }}', 'DRAW', '{{ odds.draw_odds }}', '{{ match.home_team.name }} vs {{ match.away_team.name }}', this)">
-                                            <span class="font-bold opacity-45 group-[.btn-primary]/btn:opacity-75">X (Draw)</span>
-                                            <span class="font-black tabular-nums">{{ odds.draw_odds }}</span>
-                                        </button>
-                                        <button class="odds-btn w-full flex items-center col-span-2 text-nowrap justify-between bg-base-200/50 hover:bg-primary hover:text-white active:scale-95 transition-all duration-150 rounded-xl px-4 py-2.5 border border-base-300/40 hover:border-primary group/btn text-xs"
-                                                onclick="toggleSelection('{{ match.id }}', 'AWAY_WIN', '{{ odds.away_odds }}', '{{ match.home_team.name }} vs {{ match.away_team.name }}', this)">
-                                            <span class="font-bold opacity-45 group-[.btn-primary]/btn:opacity-75">2 (Away)</span>
-                                            <span class="font-black tabular-nums">{{ odds.away_odds }}</span>
-                                        </button>
-                                    </div>
-                                {% endif %}
-                            {% endwith %}
-                        {% endif %}
-                    </div>
-
-                    <!-- Over/Under & BTTS Grid -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-6 pt-2">
-                        <!-- Over/Under Progress -->
-                        <div class="bg-base-200/50 p-4 rounded-xl border border-base-200 space-y-3">
-                            <div class="flex justify-between items-center">
-                                <h4 class="font-bold text-xs opacity-75">Goals Over/Under</h4>
-                                <!-- Segmented Selector Tabs -->
-                                <div class="tabs tabs-boxed bg-base-300 p-0.5 rounded-lg flex scale-90 origin-right">
-                                    <button onclick="setOUThreshold(1.5)" id="tab-ou-15" class="tab tab-xs rounded font-bold px-2 py-0.5">1.5</button>
-                                    <button onclick="setOUThreshold(2.5)" id="tab-ou-25" class="tab tab-xs tab-active rounded font-bold px-2 py-0.5">2.5</button>
-                                    <button onclick="setOUThreshold(3.5)" id="tab-ou-35" class="tab tab-xs rounded font-bold px-2 py-0.5">3.5</button>
-                                </div>
-                            </div>
-                            
-                            <div class="space-y-3.5 text-xs">
-                                <div>
-                                    <div class="flex justify-between font-medium mb-1">
-                                        <span id="label-over">Over 2.5 Goals</span>
-                                        <span id="val-over-prob" class="font-bold">{{ prediction.over_2_5_prob }}%</span>
-                                    </div>
-                                    <progress id="progress-over" class="progress progress-primary w-full h-2" value="{{ prediction.over_2_5_prob }}" max="100"></progress>
-                                </div>
-                                <div>
-                                    <div class="flex justify-between font-medium mb-1">
-                                        <span id="label-under">Under 2.5 Goals</span>
-                                        <span id="val-under-prob" class="font-bold">{{ prediction.under_2_5_prob }}%</span>
-                                    </div>
-                                    <progress id="progress-under" class="progress progress-neutral w-full h-2" value="{{ prediction.under_2_5_prob }}" max="100"></progress>
-                                </div>
-                            </div>
-
-                            <!-- Interactive Place Bet buttons for Over/Under -->
-                            {% if match.status != 'LIVE' and match.status != 'FINISHED' %}
-                                {% with match.odds_snapshots.first as odds %}
-                                    {% if odds %}
-                                        <div class="grid grid-cols-2 gap-2 pt-2 border-t border-base-200/40">
-                                            <button id="btn-bet-over" class="odds-btn flex flex-col items-center justify-center bg-base-100 hover:bg-primary hover:text-white active:scale-95 transition-all duration-150 rounded-xl py-2 border border-base-300/40 hover:border-primary group/btn"
-                                                    onclick="toggleSelection('{{ match.id }}', 'OVER_2_5', '{{ odds.over_2_5_odds }}', '{{ match.home_team.name }} vs {{ match.away_team.name }}', this)">
-                                                <span class="text-[9px] font-bold opacity-45 mb-0.5 uppercase tracking-wider group-[.btn-primary]/btn:opacity-75" id="btn-over-label">Over 2.5</span>
-                                                <span class="text-xs font-black tabular-nums" id="btn-over-odds">{{ odds.over_2_5_odds }}</span>
-                                            </button>
-                                            <button id="btn-bet-under" class="odds-btn flex flex-col items-center justify-center bg-base-100 hover:bg-primary hover:text-white active:scale-95 transition-all duration-150 rounded-xl py-2 border border-base-300/40 hover:border-primary group/btn"
-                                                    onclick="toggleSelection('{{ match.id }}', 'UNDER_2_5', '{{ odds.under_2_5_odds }}', '{{ match.home_team.name }} vs {{ match.away_team.name }}', this)">
-                                                <span class="text-[9px] font-bold opacity-45 mb-0.5 uppercase tracking-wider group-[.btn-primary]/btn:opacity-75" id="btn-under-label">Under 2.5</span>
-                                                <span class="text-xs font-black tabular-nums" id="btn-under-odds">{{ odds.under_2_5_odds }}</span>
-                                            </button>
-                                        </div>
-                                    {% endif %}
-                                {% endwith %}
-                            {% endif %}
-                        </div>
-
-                        <!-- BTTS Progress -->
-                        <div class="bg-base-200/50 p-4 rounded-xl border border-base-200 space-y-3 flex flex-col justify-between">
-                            <h4 class="font-bold text-xs opacity-75">Both Teams to Score (BTTS)</h4>
-                            <div class="space-y-2 text-xs">
-                                <div>
-                                    <div class="flex justify-between font-medium mb-1">
-                                        <span>BTTS - Yes</span>
-                                        <span class="font-bold">{{ prediction.btts_yes_prob }}%</span>
-                                    </div>
-                                    <progress class="progress progress-secondary w-full h-2" value="{{ prediction.btts_yes_prob }}" max="100"></progress>
-                                </div>
-                                <div>
-                                    <div class="flex justify-between font-medium mb-1">
-                                        <span>BTTS - No</span>
-                                        <span class="font-bold">{{ prediction.btts_no_prob }}%</span>
-                                    </div>
-                                    <progress class="progress progress-neutral w-full h-2" value="{{ prediction.btts_no_prob }}" max="100"></progress>
-                                </div>
-                            </div>
-                            <!-- Place Bet buttons for BTTS -->
-                            {% if match.status != 'LIVE' and match.status != 'FINISHED' %}
-                                {% with match.odds_snapshots.first as odds %}
-                                    {% if odds %}
-                                        <div class="grid grid-cols-2 gap-2 pt-2 border-t border-base-200/40">
-                                            <button class="odds-btn flex flex-col items-center justify-center bg-base-100 hover:bg-primary hover:text-white active:scale-95 transition-all duration-150 rounded-xl py-2 border border-base-300/40 hover:border-primary group/btn"
-                                                    onclick="toggleSelection('{{ match.id }}', 'BTTS_YES', '{{ odds.btts_yes_odds }}', '{{ match.home_team.name }} vs {{ match.away_team.name }}', this)">
-                                                <span class="text-[9px] font-bold opacity-45 mb-0.5 uppercase tracking-wider group-[.btn-primary]/btn:opacity-75">BTTS Yes</span>
-                                                <span class="text-xs font-black tabular-nums">{{ odds.btts_yes_odds }}</span>
-                                            </button>
-                                            <button class="odds-btn flex flex-col items-center justify-center bg-base-100 hover:bg-primary hover:text-white active:scale-95 transition-all duration-150 rounded-xl py-2 border border-base-300/40 hover:border-primary group/btn"
-                                                    onclick="toggleSelection('{{ match.id }}', 'BTTS_NO', '{{ odds.btts_no_odds }}', '{{ match.home_team.name }} vs {{ match.away_team.name }}', this)">
-                                                <span class="text-[9px] font-bold opacity-45 mb-0.5 uppercase tracking-wider group-[.btn-primary]/btn:opacity-75">BTTS No</span>
-                                                <span class="text-xs font-black tabular-nums">{{ odds.btts_no_odds }}</span>
-                                            </button>
-                                        </div>
-                                    {% endif %}
-                                {% endwith %}
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Client Script for Over/Under dynamic updates -->
-            <script>
-                function setOUThreshold(threshold) {
-                    ['15', '25', '35'].forEach(t => {
-                        const el = document.getElementById('tab-ou-' + t);
-                        if (el) el.classList.remove('tab-active');
-                    });
-                    const activeTab = document.getElementById('tab-ou-' + (threshold * 10).toString().replace('.', ''));
-                    if (activeTab) activeTab.classList.add('tab-active');
-
-                    const baseOverProb = parseFloat("{{ prediction.over_2_5_prob|default:50 }}");
-                    
-                    let overProb = baseOverProb;
-                    let underProb = 100 - baseOverProb;
-                    
-                    const baseOverOdds = parseFloat("{{ match.odds_snapshots.first.over_2_5_odds|default:1.90 }}");
-                    const baseUnderOdds = parseFloat("{{ match.odds_snapshots.first.under_2_5_odds|default:1.90 }}");
-                    
-                    let overOdds = baseOverOdds;
-                    let underOdds = baseUnderOdds;
-                    let marketOver = 'OVER_2_5';
-                    let marketUnder = 'UNDER_2_5';
-
-                    if (threshold === 1.5) {
-                        overProb = Math.min(98, Math.round(baseOverProb * 1.25));
-                        underProb = Math.max(2, 100 - overProb);
-                        overOdds = Math.max(1.05, Math.round(baseOverOdds * 0.7 * 100) / 100);
-                        underOdds = Math.round(baseUnderOdds * 1.5 * 100) / 100;
-                        marketOver = 'OVER_1_5';
-                        marketUnder = 'UNDER_1_5';
-                    } else if (threshold === 3.5) {
-                        overProb = Math.max(2, Math.round(baseOverProb * 0.65));
-                        underProb = Math.max(2, 100 - overProb);
-                        overOdds = Math.round(baseOverOdds * 1.6 * 100) / 100;
-                        underOdds = Math.max(1.05, Math.round(baseUnderOdds * 0.65 * 100) / 100);
-                        marketOver = 'OVER_3_5';
-                        marketUnder = 'UNDER_3_5';
-                    }
-
-                    document.getElementById('label-over').textContent = 'Over ' + threshold + ' Goals';
-                    document.getElementById('val-over-prob').textContent = overProb + '%';
-                    document.getElementById('progress-over').value = overProb;
-
-                    document.getElementById('label-under').textContent = 'Under ' + threshold + ' Goals';
-                    document.getElementById('val-under-prob').textContent = underProb + '%';
-                    document.getElementById('progress-under').value = underProb;
-
-                    // Update Bet Buttons
-                    const btnOverLabel = document.getElementById('btn-over-label');
-                    const btnOverOdds = document.getElementById('btn-over-odds');
-                    const btnOver = document.getElementById('btn-bet-over');
-
-                    const btnUnderLabel = document.getElementById('btn-under-label');
-                    const btnUnderOdds = document.getElementById('btn-under-odds');
-                    const btnUnder = document.getElementById('btn-bet-under');
-
-                    if (btnOverLabel && btnOverOdds && btnOver) {
-                        btnOverLabel.textContent = 'Over ' + threshold;
-                        btnOverOdds.textContent = overOdds.toFixed(2);
-                        btnOver.onclick = function() {
-                            toggleSelection('{{ match.id }}', marketOver, overOdds.toFixed(2), '{{ match.home_team.name }} vs {{ match.away_team.name }}', btnOver);
-                        };
-                        
-                        // Check if selected in betslip
-                        if (window.betslipSelections) {
-                            const isSelected = betslipSelections.some(sel => sel.match_id === '{{ match.id }}' && sel.market === marketOver);
-                            if (isSelected) {
-                                btnOver.classList.add('btn-primary', 'shadow-md');
-                            } else {
-                                btnOver.classList.remove('btn-primary', 'shadow-md');
-                            }
-                        }
-                    }
-
-                    if (btnUnderLabel && btnUnderOdds && btnUnder) {
-                        btnUnderLabel.textContent = 'Under ' + threshold;
-                        btnUnderOdds.textContent = underOdds.toFixed(2);
-                        btnUnder.onclick = function() {
-                            toggleSelection('{{ match.id }}', marketUnder, underOdds.toFixed(2), '{{ match.home_team.name }} vs {{ match.away_team.name }}', btnUnder);
-                        };
-                        
-                        // Check if selected in betslip
-                        if (window.betslipSelections) {
-                            const isSelected = betslipSelections.some(sel => sel.match_id === '{{ match.id }}' && sel.market === marketUnder);
-                            if (isSelected) {
-                                btnUnder.classList.add('btn-primary', 'shadow-md');
-                            } else {
-                                btnUnder.classList.remove('btn-primary', 'shadow-md');
-                            }
-                        }
-                    }
-                }
-                
-                // Initialize default
-                setOUThreshold(2.5);
-                window.addEventListener('load', () => {
-                    setTimeout(() => {
-                        setOUThreshold(2.5);
-                    }, 300);
-                });
-            </script>
-
-            <!-- AI Verdict & Tactical Insights -->
-            {% if ai_analysis %}
-                <div class="card bg-base-100 border border-base-200 shadow-xl rounded-2xl">
-                    <div class="card-body p-6 space-y-6">
-                        <!-- AI Recommendation Banner -->
-                        <div class="p-4 rounded-xl bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 flex items-center justify-between flex-wrap gap-4">
-                            <div>
-                                <p class="text-[10px] uppercase font-bold tracking-widest text-primary">AI Recommended Selection</p>
-                                <h4 class="font-extrabold text-lg text-base-content text-nowrap mt-0.5">{{ prediction.recommended_pick }}</h4>
-                            </div>
-                            <div class="text-right">
-                                <span class="badge badge-primary py-2.5 px-3.5 font-bold text-nowrap shadow-lg shadow-primary/20">
-                                    {{ prediction.confidence_score }}% Confidence
-                                </span>
-                            </div>
-                        </div>
-
-                        <!-- Tactical Insights Columns -->
-                        <div class="space-y-4 text-sm leading-relaxed">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div class="space-y-1 bg-base-200/20 p-4 rounded-xl border border-base-200">
-                                    <h5 class="font-bold text-xs text-primary flex items-center gap-1">
-                                        ⚔️ Tactical Breakdown
-                                    </h5>
-                                    <p class="opacity-80 text-xs">{{ ai_analysis.tactical_breakdown }}</p>
-                                </div>
-                                <div class="space-y-1 bg-base-200/20 p-4 rounded-xl border border-base-200">
-                                    <h5 class="font-bold text-xs text-secondary flex items-center gap-1">
-                                        👥 Key Player Matchups
-                                    </h5>
-                                    <p class="opacity-80 text-xs">{{ ai_analysis.key_player_matchups }}</p>
-                                </div>
-                            </div>
-
-                            <div class="space-y-2 bg-base-200/40 p-4 rounded-xl border border-base-200">
-                                <h5 class="font-bold text-xs text-accent flex items-center gap-1">
-                                    🔮 Final AI Verdict
-                                </h5>
-                                <p class="font-medium text-xs text-base-content">{{ ai_analysis.final_verdict }}</p>
-                            </div>
-
-                            {% if ai_analysis.weather_impact %}
-                                <p class="text-[11px] opacity-40 text-right">
-                                    🌦️ Weather Impact Model: {{ ai_analysis.weather_impact }}
-                                </p>
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-            {% endif %}
-        </div>
-    {% endif %}
-{% else %}
-    <div class="card bg-base-100 border border-base-200 p-12 text-center text-base-content/60 shadow-sm rounded-2xl">
-        <span class="text-5xl mb-3">🤖</span>
-        <h4 class="font-bold text-lg">AI Calculations Pending</h4>
-        <p class="text-sm opacity-60 max-w-md mx-auto mt-1">
-            Our ML model is currently compiling tactical variables. Refreshing updates in background...
-        </p>
+  {% if prediction.is_vip_only and not user.profile.subscription_tier.access_vip_tips %}
+    <!-- VIP Lock Paywall -->
+    <div class="mx-4 my-2 rounded-2xl overflow-hidden relative" style="background:rgba(255,255,255,0.03); border:1px solid rgba(234,179,8,0.2);">
+      <div class="absolute inset-0 backdrop-blur-md z-10 flex flex-col justify-center items-center text-center p-6 space-y-3" style="background:rgba(9,30,30,0.7);">
+        <div class="w-14 h-14 rounded-full flex items-center justify-center text-3xl" style="background:rgba(234,179,8,0.1); border:1px solid rgba(234,179,8,0.2);">🔒</div>
+        <h3 class="font-black text-xl text-white">VIP AI Analysis Locked</h3>
+        <p class="text-xs text-white/60 max-w-xs">This match has a confidence rating of <span class="text-yellow-400 font-bold">{{ prediction.confidence_score }}%</span>. Upgrade to VIP to unlock the predicted exact score and full tactical models.</p>
+        <a href="{% url 'users:profile' %}" class="mt-1 px-6 py-2.5 rounded-xl font-black text-sm text-black" style="background:linear-gradient(135deg,#fbbf24,#f59e0b);">🔑 Upgrade to VIP</a>
+      </div>
+      <div class="p-5 opacity-10 select-none pointer-events-none space-y-3">
+        <div class="h-8 rounded-lg" style="background:rgba(255,255,255,0.1);"></div>
+        <div class="h-16 rounded-lg" style="background:rgba(255,255,255,0.1);"></div>
+        <div class="h-12 rounded-lg" style="background:rgba(255,255,255,0.1);"></div>
+      </div>
     </div>
+
+  {% else %}
+  <!-- ══════════════════════════════════════
+       FULL AI PREDICTION — 22bet Style
+  ═══════════════════════════════════════ -->
+
+  <!-- ① AI Exact Score Card (hero element) -->
+  {% if prediction.predicted_exact_score and match.status == 'SCHEDULED' %}
+  <div class="mx-4 my-2">
+    <div class="ai-score-card">
+      <div class="flex items-start justify-between gap-3 mb-3">
+        <div>
+          <div class="flex items-center gap-1.5 mb-1">
+            <span class="text-[10px] font-black uppercase tracking-widest text-emerald-400">🤖 AI Correct Score Prediction</span>
+          </div>
+          <div class="ai-score-display">
+            <span>{{ prediction.predicted_home_score }}</span>
+            <span class="separator">—</span>
+            <span>{{ prediction.predicted_away_score }}</span>
+          </div>
+          <div class="text-[11px] text-white/40 font-semibold mt-1">
+            {{ match.home_team.name }} &nbsp;vs&nbsp; {{ match.away_team.name }}
+          </div>
+        </div>
+        <div class="confidence-ring flex-shrink-0">
+          <span>{{ prediction.confidence_score }}%</span>
+        </div>
+      </div>
+
+      <!-- Place bet on exact score -->
+      <button id="cs-bet-btn"
+              class="place-score-btn odds-btn"
+              onclick="toggleSelection('{{ match.id }}','CORRECT_SCORE','{{ prediction_correct_score_odds }}','{{ match.home_team.name }} vs {{ match.away_team.name }} (Correct Score {{ prediction.predicted_home_score }}-{{ prediction.predicted_away_score }})',this)">
+        <span>Bet Correct Score: {{ prediction.predicted_home_score }} – {{ prediction.predicted_away_score }}</span>
+        <span class="bg-white/20 rounded-lg px-2 py-0.5 text-sm font-black">@ {{ prediction_correct_score_odds }}</span>
+      </button>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ② 1X2 Probability Bar -->
+  <div class="mx-4 my-2 rounded-xl p-4 space-y-3" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06);">
+    <div class="flex items-center justify-between mb-1">
+      <span class="text-[10px] font-black uppercase tracking-widest text-teal-400">AI Probability</span>
+      <span class="text-[9px] text-white/25 font-semibold">Live model weights</span>
+    </div>
+
+    <!-- Labels -->
+    <div class="flex justify-between text-[10px] font-bold text-white/50">
+      <span>{{ match.home_team.name }}</span>
+      <span>Draw</span>
+      <span>{{ match.away_team.name }}</span>
+    </div>
+
+    <!-- Tri-color bar -->
+    <div class="w-full h-7 rounded-xl overflow-hidden flex text-[10px] font-black text-white">
+      <div class="flex items-center justify-center" style="width:{{ prediction.home_win_prob }}%; background:linear-gradient(90deg,#5eead4,#14b8a6);">
+        {{ prediction.home_win_prob }}%
+      </div>
+      <div class="flex items-center justify-center border-x border-white/10" style="width:{{ prediction.draw_prob }}%; background:rgba(255,255,255,0.18);">
+        {{ prediction.draw_prob }}%
+      </div>
+      <div class="flex items-center justify-center" style="width:{{ prediction.away_win_prob }}%; background:linear-gradient(90deg,#a78bfa,#7c3aed);">
+        {{ prediction.away_win_prob }}%
+      </div>
+    </div>
+
+    <!-- 1X2 Bet Buttons (inline under bar) -->
+    {% if match.status == 'SCHEDULED' %}
+    {% with match.odds_snapshots.first as odds %}{% if odds %}
+    <div class="grid grid-cols-3 gap-2 pt-1">
+      <button class="odds-pill odds-btn" onclick="toggleSelection('{{ match.id }}','HOME_WIN','{{ odds.home_odds }}','{{ match.home_team.name }} vs {{ match.away_team.name }}',this)">
+        <span class="pill-label">1 Home</span><span class="pill-odds">{{ odds.home_odds }}</span>
+      </button>
+      <button class="odds-pill odds-btn" onclick="toggleSelection('{{ match.id }}','DRAW','{{ odds.draw_odds }}','{{ match.home_team.name }} vs {{ match.away_team.name }}',this)">
+        <span class="pill-label">X Draw</span><span class="pill-odds">{{ odds.draw_odds }}</span>
+      </button>
+      <button class="odds-pill odds-btn" onclick="toggleSelection('{{ match.id }}','AWAY_WIN','{{ odds.away_odds }}','{{ match.home_team.name }} vs {{ match.away_team.name }}',this)">
+        <span class="pill-label">2 Away</span><span class="pill-odds">{{ odds.away_odds }}</span>
+      </button>
+    </div>
+    {% endif %}{% endwith %}
+    {% endif %}
+  </div>
+
+  <!-- ③ Over/Under & BTTS in a grid -->
+  {% if match.status == 'SCHEDULED' %}
+  {% with match.odds_snapshots.first as odds %}{% if odds %}
+  <div class="mx-4 my-2 grid grid-cols-2 gap-2">
+
+    <!-- Over/Under -->
+    <div class="rounded-xl p-3 space-y-2.5" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06);">
+      <div class="flex items-center justify-between">
+        <span class="text-[10px] font-black uppercase tracking-widest text-teal-400">Goals O/U</span>
+        <div class="flex gap-1 text-[9px]">
+          <button onclick="setOUThreshold(1.5)" id="tab-ou-15" class="sub-tab-22bet px-1.5 py-0.5 text-[9px]">1.5</button>
+          <button onclick="setOUThreshold(2.5)" id="tab-ou-25" class="sub-tab-22bet active px-1.5 py-0.5 text-[9px]">2.5</button>
+          <button onclick="setOUThreshold(3.5)" id="tab-ou-35" class="sub-tab-22bet px-1.5 py-0.5 text-[9px]">3.5</button>
+        </div>
+      </div>
+      <!-- Over bar -->
+      <div>
+        <div class="flex justify-between text-[10px] font-semibold text-white/50 mb-1">
+          <span id="label-over">Over 2.5</span><span id="val-over-prob" class="font-black text-white/80">{{ prediction.over_2_5_prob }}%</span>
+        </div>
+        <div class="prob-bar-container"><div class="prob-bar-home" id="progress-over" style="width:{{ prediction.over_2_5_prob }}%"></div></div>
+      </div>
+      <!-- Under bar -->
+      <div>
+        <div class="flex justify-between text-[10px] font-semibold text-white/50 mb-1">
+          <span id="label-under">Under 2.5</span><span id="val-under-prob" class="font-black text-white/80">{{ prediction.under_2_5_prob }}%</span>
+        </div>
+        <div class="prob-bar-container"><div class="prob-bar-draw" id="progress-under" style="width:{{ prediction.under_2_5_prob }}%"></div></div>
+      </div>
+      <!-- Bet buttons -->
+      <div class="grid grid-cols-2 gap-1.5 pt-1 border-t border-white/5">
+        <button id="btn-bet-over" class="odds-pill odds-btn flex-col !items-center !justify-center py-2"
+                onclick="toggleSelection('{{ match.id }}','OVER_2_5','{{ odds.over_2_5_odds }}','{{ match.home_team.name }} vs {{ match.away_team.name }}',this)">
+          <span class="pill-label text-center w-full" id="btn-over-label">Over 2.5</span>
+          <span class="pill-odds" id="btn-over-odds">{{ odds.over_2_5_odds }}</span>
+        </button>
+        <button id="btn-bet-under" class="odds-pill odds-btn flex-col !items-center !justify-center py-2"
+                onclick="toggleSelection('{{ match.id }}','UNDER_2_5','{{ odds.under_2_5_odds }}','{{ match.home_team.name }} vs {{ match.away_team.name }}',this)">
+          <span class="pill-label text-center w-full" id="btn-under-label">Under 2.5</span>
+          <span class="pill-odds" id="btn-under-odds">{{ odds.under_2_5_odds }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- BTTS -->
+    <div class="rounded-xl p-3 space-y-2.5" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06);">
+      <span class="text-[10px] font-black uppercase tracking-widest text-teal-400 block">BTTS</span>
+      <div>
+        <div class="flex justify-between text-[10px] font-semibold text-white/50 mb-1">
+          <span>Yes</span><span class="font-black text-white/80">{{ prediction.btts_yes_prob }}%</span>
+        </div>
+        <div class="prob-bar-container"><div class="prob-bar-home" style="width:{{ prediction.btts_yes_prob }}%"></div></div>
+      </div>
+      <div>
+        <div class="flex justify-between text-[10px] font-semibold text-white/50 mb-1">
+          <span>No</span><span class="font-black text-white/80">{{ prediction.btts_no_prob }}%</span>
+        </div>
+        <div class="prob-bar-container"><div class="prob-bar-draw" style="width:{{ prediction.btts_no_prob }}%"></div></div>
+      </div>
+      <div class="grid grid-cols-2 gap-1.5 pt-1 border-t border-white/5">
+        <button class="odds-pill odds-btn flex-col !items-center !justify-center py-2"
+                onclick="toggleSelection('{{ match.id }}','BTTS_YES','{{ odds.btts_yes_odds }}','{{ match.home_team.name }} vs {{ match.away_team.name }}',this)">
+          <span class="pill-label text-center w-full">BTTS Yes</span>
+          <span class="pill-odds">{{ odds.btts_yes_odds }}</span>
+        </button>
+        <button class="odds-pill odds-btn flex-col !items-center !justify-center py-2"
+                onclick="toggleSelection('{{ match.id }}','BTTS_NO','{{ odds.btts_no_odds }}','{{ match.home_team.name }} vs {{ match.away_team.name }}',this)">
+          <span class="pill-label text-center w-full">BTTS No</span>
+          <span class="pill-odds">{{ odds.btts_no_odds }}</span>
+        </button>
+      </div>
+    </div>
+
+  </div>
+  {% endif %}{% endwith %}
+  {% endif %}
+
+  <!-- ④ AI Verdict -->
+  {% if ai_analysis %}
+  <div class="mx-4 my-2 rounded-xl p-4 space-y-3" style="background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.06);">
+    <div class="flex items-center justify-between flex-wrap gap-2">
+      <div>
+        <span class="text-[10px] font-black uppercase tracking-widest text-teal-400">AI Recommended Pick</span>
+        <div class="font-extrabold text-white text-base mt-0.5">{{ prediction.recommended_pick }}</div>
+      </div>
+      <span class="text-[10px] font-black px-3 py-1.5 rounded-full" style="background:rgba(94,234,212,0.15); color:#5eead4; border:1px solid rgba(94,234,212,0.3);">
+        {{ prediction.confidence_score }}% Confidence
+      </span>
+    </div>
+
+    <div class="grid grid-cols-1 gap-2.5 text-xs">
+      <div class="rounded-lg p-3 space-y-1" style="background:rgba(255,255,255,0.03);">
+        <span class="text-[10px] font-black text-teal-400 block">⚔️ Tactical Breakdown</span>
+        <p class="text-white/55 leading-relaxed">{{ ai_analysis.tactical_breakdown }}</p>
+      </div>
+      <div class="rounded-lg p-3 space-y-1" style="background:rgba(255,255,255,0.03);">
+        <span class="text-[10px] font-black text-purple-400 block">👥 Key Matchups</span>
+        <p class="text-white/55 leading-relaxed">{{ ai_analysis.key_player_matchups }}</p>
+      </div>
+      <div class="rounded-lg p-3 space-y-1" style="background:rgba(16,185,129,0.06); border:1px solid rgba(16,185,129,0.12);">
+        <span class="text-[10px] font-black text-emerald-400 block">🔮 Final AI Verdict</span>
+        <p class="text-white/70 leading-relaxed font-medium">{{ ai_analysis.final_verdict }}</p>
+      </div>
+    </div>
+    {% if ai_analysis.weather_impact %}
+    <p class="text-[10px] text-white/25 text-right">🌦️ {{ ai_analysis.weather_impact }}</p>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  {% endif %}<!-- end VIP check -->
+
+{% else %}
+<!-- No prediction yet -->
+<div class="mx-4 my-2 rounded-xl p-10 text-center" style="background:rgba(255,255,255,0.03);">
+  <span class="text-4xl">🤖</span>
+  <p class="text-sm font-bold text-white/50 mt-3">AI Calculations Pending</p>
+  <p class="text-xs text-white/25 mt-1">Our ML model is compiling tactical variables...</p>
+</div>
 {% endif %}
+
+<!-- Over/Under dynamic threshold script -->
+<script>
+function setOUThreshold(threshold) {
+  ['15','25','35'].forEach(t => {
+    const el = document.getElementById('tab-ou-' + t);
+    if (el) el.classList.remove('active');
+  });
+  const key = String(threshold).replace('.','');
+  const activeTab = document.getElementById('tab-ou-' + key);
+  if (activeTab) activeTab.classList.add('active');
+
+  const baseOverProb  = parseFloat("{{ prediction.over_2_5_prob|default:50 }}");
+  const baseOverOdds  = parseFloat("{{ match.odds_snapshots.first.over_2_5_odds|default:1.90 }}");
+  const baseUnderOdds = parseFloat("{{ match.odds_snapshots.first.under_2_5_odds|default:1.90 }}");
+
+  let overProb, underProb, overOdds, underOdds, marketOver, marketUnder;
+
+  if (threshold === 1.5) {
+    overProb   = Math.min(98, Math.round(baseOverProb * 1.25));
+    overOdds   = Math.max(1.05, Math.round(baseOverOdds * 0.7 * 100) / 100);
+    underOdds  = Math.round(baseUnderOdds * 1.5 * 100) / 100;
+    marketOver = 'OVER_1_5'; marketUnder = 'UNDER_1_5';
+  } else if (threshold === 3.5) {
+    overProb   = Math.max(2, Math.round(baseOverProb * 0.65));
+    overOdds   = Math.round(baseOverOdds * 1.6 * 100) / 100;
+    underOdds  = Math.max(1.05, Math.round(baseUnderOdds * 0.65 * 100) / 100);
+    marketOver = 'OVER_3_5'; marketUnder = 'UNDER_3_5';
+  } else {
+    overProb   = Math.round(baseOverProb);
+    overOdds   = baseOverOdds;
+    underOdds  = baseUnderOdds;
+    marketOver = 'OVER_2_5'; marketUnder = 'UNDER_2_5';
+  }
+  underProb = Math.max(2, 100 - overProb);
+
+  // Update probability displays
+  const lo = document.getElementById('label-over');
+  const lu = document.getElementById('label-under');
+  const vo = document.getElementById('val-over-prob');
+  const vu = document.getElementById('val-under-prob');
+  const po = document.getElementById('progress-over');
+  const pu = document.getElementById('progress-under');
+  if (lo) lo.textContent = 'Over ' + threshold;
+  if (lu) lu.textContent = 'Under ' + threshold;
+  if (vo) vo.textContent = overProb + '%';
+  if (vu) vu.textContent = underProb + '%';
+  if (po) po.style.width = overProb + '%';
+  if (pu) pu.style.width = underProb + '%';
+
+  // Update bet buttons
+  const btnOver  = document.getElementById('btn-bet-over');
+  const btnUnder = document.getElementById('btn-bet-under');
+  const lblOver  = document.getElementById('btn-over-label');
+  const lblUnder = document.getElementById('btn-under-label');
+  const odsOver  = document.getElementById('btn-over-odds');
+  const odsUnder = document.getElementById('btn-under-odds');
+
+  if (btnOver && lblOver && odsOver) {
+    lblOver.textContent  = 'Over '  + threshold;
+    odsOver.textContent  = overOdds.toFixed(2);
+    btnOver.onclick = function() {
+      toggleSelection('{{ match.id }}', marketOver, overOdds.toFixed(2), '{{ match.home_team.name }} vs {{ match.away_team.name }}', btnOver);
+    };
+  }
+  if (btnUnder && lblUnder && odsUnder) {
+    lblUnder.textContent = 'Under ' + threshold;
+    odsUnder.textContent = underOdds.toFixed(2);
+    btnUnder.onclick = function() {
+      toggleSelection('{{ match.id }}', marketUnder, underOdds.toFixed(2), '{{ match.home_team.name }} vs {{ match.away_team.name }}', btnUnder);
+    };
+  }
+}
+// Default on load
+setOUThreshold(2.5);
+window.addEventListener('load', () => setTimeout(() => setOUThreshold(2.5), 300));
+</script>

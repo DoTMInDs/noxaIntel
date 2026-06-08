@@ -15,10 +15,19 @@ def prediction_detail(request, match_id):
     prediction = getattr(match, 'prediction', None)
     ai_analysis = getattr(match, 'ai_analysis', None)
 
+    # Calculate correct score odds to pass into template
+    correct_score_odds = None
+    if prediction:
+        try:
+            correct_score_odds = prediction.get_correct_score_odds()
+        except Exception:
+            correct_score_odds = None
+
     return render(request, 'predictions/detail.html', {
         'match': match,
         'prediction': prediction,
         'ai_analysis': ai_analysis,
+        'prediction_correct_score_odds': correct_score_odds,
     })
 
 
@@ -46,6 +55,14 @@ def prediction_partial(request, match_id):
     prediction = getattr(match, 'prediction', None)
     ai_analysis = getattr(match, 'ai_analysis', None)
 
+    # Calculate correct score odds to pass into template
+    correct_score_odds = None
+    if prediction:
+        try:
+            correct_score_odds = prediction.get_correct_score_odds()
+        except Exception:
+            correct_score_odds = None
+
     # Trigger async Celery task to precompute/refresh in background
     refresh_match_prediction.delay(match_id)
 
@@ -53,6 +70,7 @@ def prediction_partial(request, match_id):
         'match': match,
         'prediction': prediction,
         'ai_analysis': ai_analysis,
+        'prediction_correct_score_odds': correct_score_odds,
     })
 
     # Cache the rendered fragment for 5 minutes

@@ -14,6 +14,7 @@ from django.contrib import messages
 from .models import BettingTip, BetSlip, BetSelection
 from matches.models import Match
 from wallet.models import Wallet, Transaction
+from predictions.models import Prediction
 from analytics.utils import track_cache
 
 logger = logging.getLogger(__name__)
@@ -116,6 +117,7 @@ def place_bet(request):
         'UNDER_3_5': 'UNDER_3_5',
         'BTTS_YES': 'BTTS_YES',
         'BTTS_NO': 'BTTS_NO',
+        'CORRECT_SCORE': 'CORRECT_SCORE',
     }
 
     # Fetch and validate matches
@@ -171,6 +173,13 @@ def place_bet(request):
             odds_val = odds_snapshot.btts_yes_odds or Decimal('1.00')
         elif market == 'BTTS_NO':
             odds_val = odds_snapshot.btts_no_odds or Decimal('1.00')
+        elif market == 'CORRECT_SCORE':
+            # Pull correct score odds from AI prediction model
+            try:
+                prediction = Prediction.objects.get(match=match)
+                odds_val = Decimal(str(prediction.get_correct_score_odds()))
+            except Prediction.DoesNotExist:
+                odds_val = Decimal('8.00')
 
         total_odds *= odds_val
         selections_to_create.append({

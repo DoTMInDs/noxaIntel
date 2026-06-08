@@ -1,170 +1,608 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ match.home_team.name }} vs {{ match.away_team.name }} - Match Detail{% endblock %}
+{% block title %}{{ match.home_team.name }} vs {{ match.away_team.name }} - NoxaIntel{% endblock %}
+
+{% block extra_head %}
+<style>
+  /* ── 22bet-style teal dark theme overrides ── */
+  .bet-detail-bg {
+    background: linear-gradient(160deg, #0a2a2a 0%, #0d3535 40%, #091e1e 100%);
+    min-height: 100vh;
+  }
+  .match-header-card {
+    background: linear-gradient(135deg, #0f3d3d 0%, #0a2828 60%, #061a1a 100%);
+    border: 1px solid rgba(20,184,166,0.18);
+    position: relative;
+    overflow: hidden;
+  }
+  .match-header-card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg width='120' height='120' viewBox='0 0 120 120' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='60' cy='60' r='55' stroke='rgba(20,184,166,0.07)' stroke-width='2' fill='none'/%3E%3Ccircle cx='60' cy='60' r='40' stroke='rgba(20,184,166,0.05)' stroke-width='1.5' fill='none'/%3E%3Cline x1='5' y1='60' x2='115' y2='60' stroke='rgba(20,184,166,0.05)' stroke-width='1.5'/%3E%3C/svg%3E");
+    background-size: 180px 180px;
+    background-position: center right -20px;
+    opacity: 0.6;
+    pointer-events: none;
+  }
+  .tab-22bet {
+    color: rgba(255,255,255,0.45);
+    font-size: 0.78rem;
+    font-weight: 700;
+    padding: 0.5rem 1rem;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: none;
+    letter-spacing: 0;
+    white-space: nowrap;
+  }
+  .tab-22bet.active {
+    color: #5eead4;
+    border-bottom-color: #5eead4;
+  }
+  .tab-22bet:hover:not(.active) { color: rgba(255,255,255,0.7); }
+  .sub-tab-22bet {
+    color: rgba(255,255,255,0.4);
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 0.35rem 0.75rem;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .sub-tab-22bet.active {
+    background: rgba(94,234,212,0.15);
+    color: #5eead4;
+  }
+  .countdown-block {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 44px;
+  }
+  .countdown-num {
+    font-size: 1.6rem;
+    font-weight: 900;
+    color: #fff;
+    line-height: 1;
+    font-variant-numeric: tabular-nums;
+  }
+  .countdown-label {
+    font-size: 0.55rem;
+    font-weight: 600;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-top: 2px;
+  }
+  .countdown-sep { font-size: 1.4rem; font-weight: 900; color: rgba(255,255,255,0.3); align-self: flex-start; padding-top: 2px; }
+
+  /* Market blocks */
+  .market-block {
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+  }
+  .market-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+  }
+  .market-header:hover { background: rgba(255,255,255,0.03); }
+  .market-title {
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.7);
+  }
+  .market-body { padding: 0 0.75rem 0.75rem; }
+
+  /* Odds buttons */
+  .odds-pill {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 8px;
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    gap: 0.5rem;
+    flex: 1;
+    min-width: 0;
+  }
+  .odds-pill:hover {
+    background: rgba(94,234,212,0.12);
+    border-color: rgba(94,234,212,0.35);
+  }
+  .odds-pill.selected, .odds-pill.btn-primary {
+    background: rgba(94,234,212,0.22) !important;
+    border-color: #5eead4 !important;
+  }
+  .odds-pill .pill-label {
+    font-size: 0.7rem;
+    color: rgba(255,255,255,0.5);
+    font-weight: 600;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+  }
+  .odds-pill .pill-odds {
+    font-size: 0.85rem;
+    font-weight: 900;
+    color: #5eead4;
+    flex-shrink: 0;
+    font-variant-numeric: tabular-nums;
+  }
+  .odds-pill.selected .pill-odds, .odds-pill.btn-primary .pill-odds { color: #fff; }
+
+  /* AI Score prediction block */
+  .ai-score-card {
+    background: linear-gradient(135deg, rgba(16,185,129,0.12) 0%, rgba(6,78,59,0.15) 100%);
+    border: 1px solid rgba(16,185,129,0.25);
+    border-radius: 14px;
+    padding: 1rem;
+  }
+  .ai-score-display {
+    font-size: 2.2rem;
+    font-weight: 900;
+    color: #fff;
+    letter-spacing: 0.05em;
+    font-variant-numeric: tabular-nums;
+  }
+  .ai-score-display .separator {
+    color: rgba(255,255,255,0.35);
+    margin: 0 0.15em;
+  }
+  .place-score-btn {
+    background: linear-gradient(135deg, #10b981, #059669);
+    border: none;
+    border-radius: 10px;
+    color: #fff;
+    font-weight: 900;
+    font-size: 0.78rem;
+    padding: 0.65rem 1rem;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    width: 100%;
+    letter-spacing: 0.02em;
+  }
+  .place-score-btn:hover { filter: brightness(1.1); transform: translateY(-1px); }
+  .place-score-btn:active { transform: scale(0.98); }
+  .place-score-btn.selected, .place-score-btn.btn-primary {
+    background: linear-gradient(135deg, #5eead4, #14b8a6) !important;
+  }
+  .confidence-ring {
+    width: 48px; height: 48px;
+    border-radius: 50%;
+    border: 3px solid rgba(16,185,129,0.3);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.65rem; font-weight: 900; color: #10b981;
+    flex-shrink: 0;
+    background: rgba(16,185,129,0.08);
+  }
+  /* Prob bar */
+  .prob-bar-container { height: 8px; border-radius: 4px; overflow: hidden; background: rgba(255,255,255,0.07); }
+  .prob-bar-home { background: linear-gradient(90deg,#5eead4,#14b8a6); height:100%; border-radius:4px; transition: width 0.5s; }
+  .prob-bar-draw { background: rgba(255,255,255,0.25); height:100%; transition: width 0.5s; }
+  .prob-bar-away { background: linear-gradient(90deg,#a78bfa,#7c3aed); height:100%; border-radius:4px; transition: width 0.5s; }
+
+  /* Back btn */
+  .back-btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    color: rgba(255,255,255,0.55); font-size: 0.78rem; font-weight: 700;
+    padding: 0.35rem 0.65rem; border-radius: 8px;
+    transition: all 0.15s;
+    text-decoration: none;
+  }
+  .back-btn:hover { background: rgba(255,255,255,0.07); color: #fff; }
+
+  /* Live badge */
+  @keyframes live-pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+  .live-badge { animation: live-pulse 1.4s infinite; }
+
+  /* Scrollable sub-tabs */
+  .sub-tabs-scroll { display:flex; gap:0.25rem; overflow-x:auto; padding:0.5rem 0.75rem; scrollbar-width:none; }
+  .sub-tabs-scroll::-webkit-scrollbar { display:none; }
+  .top-tabs-scroll { display:flex; overflow-x:auto; border-bottom:1px solid rgba(255,255,255,0.08); scrollbar-width:none; padding: 0 1rem; }
+  .top-tabs-scroll::-webkit-scrollbar { display:none; }
+</style>
+{% endblock %}
 
 {% block content %}
-<div class="space-y-8 max-w-7xl mx-auto">
-    <!-- Back to Dashboard -->
-    <a href="{% url 'matches:dashboard' %}" class="btn btn-ghost btn-sm gap-1 pl-2">
-        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-        </svg>
-        Dashboard
+<div class="bet-detail-bg -m-4 md:-m-6 lg:-m-8 pb-32">
+
+  <!-- Back Button -->
+  <div class="px-4 pt-4 pb-2">
+    <a href="{% url 'matches:dashboard' %}" class="back-btn">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+      Back
     </a>
+  </div>
 
-    <!-- Match Header Banner -->
-    <div class="card bg-base-100 border border-base-200 shadow-xl rounded-2xl overflow-hidden">
-        <div class="card-body p-6 md:p-8 space-y-6">
-            <!-- League & Status Header -->
-            <div class="flex justify-between items-center text-xs opacity-75">
-                <span class="font-bold uppercase tracking-wider text-primary">
-                    🏆 {{ match.league.name }} ({{ match.league.country }})
-                </span>
-                <span class="font-medium">
-                    {{ match.match_date|date:"F d, Y @ H:i" }}
-                </span>
+  <!-- Match Header -->
+  <div class="match-header-card mx-4 rounded-2xl shadow-2xl">
+    <div class="p-4 space-y-4">
+
+      <!-- League row -->
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="text-base">⚽</span>
+          <div>
+            <div class="text-xs font-black text-white tracking-wide">
+              {% if match.league.name %}{{ match.league.name }}{% else %}Football{% endif %}
             </div>
-
-            <!-- VS Banner Grid -->
-            <div class="grid grid-cols-7 items-center text-center py-4">
-                <!-- Home Team -->
-                <div class="col-span-3 flex flex-col items-center gap-3">
-                    <div class="w-16 h-16 md:w-20 md:h-20 rounded-full bg-base-200 border border-base-300 flex items-center justify-center font-black text-xl shadow-md">
-                        {% if match.home_team.logo_url %}
-                            <img src="{{ match.home_team.logo_url }}" class="w-12 h-12 md:w-14 md:h-14 object-contain" alt="{{ match.home_team.name }}">
-                        {% else %}
-                            {{ match.home_team.name|slice:":2"|upper }}
-                        {% endif %}
-                    </div>
-                    <h2 class="font-extrabold text-base md:text-xl text-base-content">{{ match.home_team.name }}</h2>
-                </div>
-
-                <!-- Live Score / VS Divider -->
-                <div class="col-span-1 flex flex-col items-center justify-center">
-                    {% if match.status == 'LIVE' or match.status == 'FINISHED' %}
-                        <div class="space-y-1">
-                            <span class="text-3xl md:text-5xl font-black tracking-widest text-primary">
-                                {{ match.home_score }}:{{ match.away_score }}
-                            </span>
-                            <div class="flex justify-center">
-                                {% if match.status == 'LIVE' %}
-                                    <span class="badge badge-error badge-sm font-bold py-1.5 animate-pulse text-[10px]">
-                                        LIVE {{ match.minute }}
-                                    </span>
-                                {% else %}
-                                    <span class="badge badge-neutral badge-sm font-bold py-1.5 text-[10px]">
-                                        FT
-                                    </span>
-                                {% endif %}
-                            </div>
-                        </div>
-                    {% else %}
-                        <div class="flex flex-col items-center gap-1.5">
-                            <span class="text-xl md:text-3xl font-light opacity-30">VS</span>
-                            <span class="badge badge-info badge-outline badge-sm font-bold text-[9px] uppercase tracking-wider">
-                                Scheduled
-                            </span>
-                        </div>
-                    {% endif %}
-                </div>
-
-                <!-- Away Team -->
-                <div class="col-span-3 flex flex-col items-center gap-3">
-                    <div class="w-16 h-16 md:w-20 md:h-20 rounded-full bg-base-200 border border-base-300 flex items-center justify-center font-black text-xl shadow-md">
-                        {% if match.away_team.logo_url %}
-                            <img src="{{ match.away_team.logo_url }}" class="w-12 h-12 md:w-14 md:h-14 object-contain" alt="{{ match.away_team.name }}">
-                        {% else %}
-                            {{ match.away_team.name|slice:":2"|upper }}
-                        {% endif %}
-                    </div>
-                    <h2 class="font-extrabold text-base md:text-xl text-base-content">{{ match.away_team.name }}</h2>
-                </div>
-            </div>
+            <div class="text-[10px] text-teal-400/70 font-semibold">{{ match.league.country }}</div>
+          </div>
         </div>
+        <button class="text-white/30 hover:text-yellow-400 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/></svg>
+        </button>
+      </div>
+
+      <!-- Teams & Score -->
+      <div class="grid grid-cols-7 items-center gap-2">
+        <!-- Home -->
+        <div class="col-span-3 flex flex-col items-center gap-2 text-center">
+          <div class="w-14 h-14 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shadow-lg overflow-hidden">
+            {% if match.home_team.logo_url %}
+              <img src="{{ match.home_team.logo_url }}" class="w-10 h-10 object-contain" alt="{{ match.home_team.name }}">
+            {% else %}
+              <span class="text-lg font-black text-white/70">{{ match.home_team.name|slice:":2"|upper }}</span>
+            {% endif %}
+          </div>
+          <span class="font-extrabold text-white text-sm leading-tight">{{ match.home_team.name }}</span>
+        </div>
+
+        <!-- Score / Date -->
+        <div class="col-span-1 flex flex-col items-center justify-center gap-1">
+          {% if match.status == 'LIVE' or match.status == 'FINISHED' %}
+            <span class="text-3xl font-black text-white tracking-widest">{{ match.home_score }}:{{ match.away_score }}</span>
+            {% if match.status == 'LIVE' %}
+              <span class="live-badge bg-red-500 text-white text-[9px] font-black px-2 py-0.5 rounded-full uppercase">Live</span>
+            {% else %}
+              <span class="bg-white/10 text-white/60 text-[9px] font-black px-2 py-0.5 rounded-full uppercase">FT</span>
+            {% endif %}
+          {% else %}
+            <div class="text-center">
+              <div class="text-xs font-black text-white">{{ match.match_date|date:"d M" }}</div>
+              <div class="text-sm font-extrabold text-teal-300">{{ match.match_date|date:"H:i" }}</div>
+            </div>
+          {% endif %}
+        </div>
+
+        <!-- Away -->
+        <div class="col-span-3 flex flex-col items-center gap-2 text-center">
+          <div class="w-14 h-14 rounded-full bg-white/5 border border-white/10 flex items-center justify-center shadow-lg overflow-hidden">
+            {% if match.away_team.logo_url %}
+              <img src="{{ match.away_team.logo_url }}" class="w-10 h-10 object-contain" alt="{{ match.away_team.name }}">
+            {% else %}
+              <span class="text-lg font-black text-white/70">{{ match.away_team.name|slice:":2"|upper }}</span>
+            {% endif %}
+          </div>
+          <span class="font-extrabold text-white text-sm leading-tight">{{ match.away_team.name }}</span>
+        </div>
+      </div>
+
+      <!-- Countdown (scheduled matches only) -->
+      {% if match.status == 'SCHEDULED' %}
+      <div class="flex items-end justify-center gap-2 pb-1" id="countdown-row" data-kickoff="{{ match.match_date|date:'c' }}">
+        <div class="countdown-block"><span class="countdown-num" id="cd-days">00</span><span class="countdown-label">Day(s)</span></div>
+        <span class="countdown-sep">:</span>
+        <div class="countdown-block"><span class="countdown-num" id="cd-hours">00</span><span class="countdown-label">Hour(s)</span></div>
+        <span class="countdown-sep">:</span>
+        <div class="countdown-block"><span class="countdown-num" id="cd-mins">00</span><span class="countdown-label">Min.</span></div>
+        <span class="countdown-sep">:</span>
+        <div class="countdown-block"><span class="countdown-num" id="cd-secs">00</span><span class="countdown-label">Sec.</span></div>
+      </div>
+      {% endif %}
     </div>
 
-    <!-- Odds and Predictions Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-        <!-- Live Market Odds Column (1/3 Width) -->
-        <div class="md:col-span-1 space-y-6">
-            <div class="card bg-base-100 border border-base-200 shadow-xl rounded-2xl">
-                <div class="card-body p-6 space-y-4">
-                    <h3 class="font-bold text-lg text-primary">Live Betting Markets</h3>
-                    
-                    {% if latest_odds %}
-                        <div class="space-y-4 text-sm">
-                            <!-- Moneyline -->
-                            <div class="space-y-2">
-                                <p class="text-xs font-semibold opacity-60">Full-Time Moneyline (1X2)</p>
-                                <div class="grid grid-cols-3 gap-2 text-center text-xs">
-                                    <div class="bg-base-200 p-2 rounded-lg">
-                                        <p class="opacity-50">1</p>
-                                        <p class="font-bold">{{ latest_odds.home_odds }}</p>
-                                    </div>
-                                    <div class="bg-base-200 p-2 rounded-lg">
-                                        <p class="opacity-50">X</p>
-                                        <p class="font-bold">{{ latest_odds.draw_odds }}</p>
-                                    </div>
-                                    <div class="bg-base-200 p-2 rounded-lg">
-                                        <p class="opacity-50">2</p>
-                                        <p class="font-bold">{{ latest_odds.away_odds }}</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Over/Under -->
-                            <div class="space-y-2 border-t border-base-200 pt-3">
-                                <p class="text-xs font-semibold opacity-60">Goals Over/Under 2.5</p>
-                                <div class="grid grid-cols-2 gap-2 text-center text-xs">
-                                    <div class="bg-base-200 p-2 rounded-lg">
-                                        <p class="opacity-50">Over 2.5</p>
-                                        <p class="font-bold">{{ latest_odds.over_2_5_odds|default:"-" }}</p>
-                                    </div>
-                                    <div class="bg-base-200 p-2 rounded-lg">
-                                        <p class="opacity-50">Under 2.5</p>
-                                        <p class="font-bold">{{ latest_odds.under_2_5_odds|default:"-" }}</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- BTTS -->
-                            <div class="space-y-2 border-t border-base-200 pt-3">
-                                <p class="text-xs font-semibold opacity-60">Both Teams to Score (BTTS)</p>
-                                <div class="grid grid-cols-2 gap-2 text-center text-xs">
-                                    <div class="bg-base-200 p-2 rounded-lg">
-                                        <p class="opacity-50">Yes</p>
-                                        <p class="font-bold">{{ latest_odds.btts_yes_odds|default:"-" }}</p>
-                                    </div>
-                                    <div class="bg-base-200 p-2 rounded-lg">
-                                        <p class="opacity-50">No</p>
-                                        <p class="font-bold">{{ latest_odds.btts_no_odds|default:"-" }}</p>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    {% else %}
-                        <div class="text-center py-6 opacity-50 text-xs">
-                            No active betting odds are currently registered for this match.
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-        </div>
-
-        <!-- AI Predictions Column (2/3 Width) -->
-        <div class="md:col-span-2 space-y-6">
-            <!-- Dynamic HTMX Lazy Loader -->
-            <div id="prediction-container" 
-                 hx-get="{% url 'predictions:partial' match.id %}" 
-                 hx-trigger="load" 
-                 hx-target="this" 
-                 hx-indicator="#prediction-indicator">
-                
-                <div id="prediction-indicator" class="w-full">
-                    {% include 'components/skeleton.html' with type='prediction' %}
-                </div>
-            </div>
-        </div>
+    <!-- Top Tabs -->
+    <div class="top-tabs-scroll">
+      <button class="tab-22bet active" onclick="switchTab(this,'tab-main')">Match info</button>
+      <button class="tab-22bet" onclick="switchTab(this,'tab-stats')">Stats</button>
+      <button class="tab-22bet" onclick="switchTab(this,'tab-chat')">Chat</button>
     </div>
-</div>
+  </div>
+
+  <!-- Sub-nav (market tabs) -->
+  <div class="sub-tabs-scroll mt-3 mx-2">
+    <button class="sub-tab-22bet active" onclick="switchSubTab(this,'sub-main')">
+      <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 inline mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      Main
+    </button>
+    <button class="sub-tab-22bet" onclick="switchSubTab(this,'sub-goals')">Goals</button>
+    <button class="sub-tab-22bet" onclick="switchSubTab(this,'sub-1st')">1st Half</button>
+    <button class="sub-tab-22bet" onclick="switchSubTab(this,'sub-2nd')">2nd Half</button>
+    <button class="sub-tab-22bet" onclick="switchSubTab(this,'sub-cs')">Correct Score</button>
+  </div>
+
+  <!-- TAB CONTENT: Match Info -->
+  <div id="tab-main" class="tab-content space-y-0 mt-2">
+
+    <!-- Sub-tab content: MAIN -->
+    <div id="sub-main" class="sub-tab-content">
+
+      {% if latest_odds %}
+      <!-- 1X2 -->
+      <div class="market-block mx-4 mt-2 rounded-xl overflow-hidden" style="background:rgba(255,255,255,0.03);">
+        <div class="market-header" onclick="toggleMarket('market-1x2')">
+          <div class="flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-teal-400/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
+            <span class="market-title">1 X 2</span>
+          </div>
+          <svg id="market-1x2-icon" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-white/30 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div id="market-1x2" class="market-body">
+          {% if match.status == 'SCHEDULED' %}
+          <div class="flex gap-2">
+            <button class="odds-pill odds-btn" onclick="toggleSelection('{{ match.id }}','HOME_WIN','{{ latest_odds.home_odds }}','{{ match.home_team.name }} vs {{ match.away_team.name }}',this)">
+              <span class="pill-label">1</span><span class="pill-odds">{{ latest_odds.home_odds }}</span>
+            </button>
+            <button class="odds-pill odds-btn" onclick="toggleSelection('{{ match.id }}','DRAW','{{ latest_odds.draw_odds }}','{{ match.home_team.name }} vs {{ match.away_team.name }}',this)">
+              <span class="pill-label">X</span><span class="pill-odds">{{ latest_odds.draw_odds }}</span>
+            </button>
+            <button class="odds-pill odds-btn" onclick="toggleSelection('{{ match.id }}','AWAY_WIN','{{ latest_odds.away_odds }}','{{ match.home_team.name }} vs {{ match.away_team.name }}',this)">
+              <span class="pill-label">2</span><span class="pill-odds">{{ latest_odds.away_odds }}</span>
+            </button>
+          </div>
+          {% else %}
+          <p class="text-xs text-white/30 text-center py-2">Betting closed</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Double Chance -->
+      <div class="market-block mx-4 mt-1.5 rounded-xl overflow-hidden" style="background:rgba(255,255,255,0.03);">
+        <div class="market-header" onclick="toggleMarket('market-dc')">
+          <div class="flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-teal-400/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
+            <span class="market-title">Double Chance</span>
+          </div>
+          <svg id="market-dc-icon" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-white/30 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div id="market-dc" class="market-body">
+          {% if match.status == 'SCHEDULED' %}
+          {% with dc_1x=latest_odds.home_odds|add:0 dc_12=latest_odds.draw_odds|add:0 dc_x2=latest_odds.away_odds|add:0 %}
+          <div class="flex gap-2">
+            <button class="odds-pill odds-btn" onclick="toggleSelection('{{ match.id }}','HOME_WIN','{{ latest_odds.home_odds }}','{{ match.home_team.name }} vs {{ match.away_team.name }} (1X)',this)">
+              <span class="pill-label">1X</span>
+              <span class="pill-odds">{% widthratio latest_odds.home_odds 1 1 %}</span>
+            </button>
+            <button class="odds-pill odds-btn" onclick="toggleSelection('{{ match.id }}','DRAW','{{ latest_odds.draw_odds }}','{{ match.home_team.name }} vs {{ match.away_team.name }} (12)',this)">
+              <span class="pill-label">12</span>
+              <span class="pill-odds">{{ latest_odds.draw_odds }}</span>
+            </button>
+            <button class="odds-pill odds-btn" onclick="toggleSelection('{{ match.id }}','AWAY_WIN','{{ latest_odds.away_odds }}','{{ match.home_team.name }} vs {{ match.away_team.name }} (X2)',this)">
+              <span class="pill-label">X2</span>
+              <span class="pill-odds">{{ latest_odds.away_odds }}</span>
+            </button>
+          </div>
+          {% endwith %}
+          {% else %}
+          <p class="text-xs text-white/30 text-center py-2">Betting closed</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- BTTS -->
+      <div class="market-block mx-4 mt-1.5 rounded-xl overflow-hidden" style="background:rgba(255,255,255,0.03);">
+        <div class="market-header" onclick="toggleMarket('market-btts')">
+          <div class="flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-teal-400/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
+            <span class="market-title">Both Teams to Score</span>
+          </div>
+          <svg id="market-btts-icon" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-white/30 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div id="market-btts" class="market-body">
+          {% if match.status == 'SCHEDULED' %}
+          <div class="flex gap-2">
+            <button class="odds-pill odds-btn" onclick="toggleSelection('{{ match.id }}','BTTS_YES','{{ latest_odds.btts_yes_odds }}','{{ match.home_team.name }} vs {{ match.away_team.name }}',this)">
+              <span class="pill-label">Yes</span><span class="pill-odds">{{ latest_odds.btts_yes_odds }}</span>
+            </button>
+            <button class="odds-pill odds-btn" onclick="toggleSelection('{{ match.id }}','BTTS_NO','{{ latest_odds.btts_no_odds }}','{{ match.home_team.name }} vs {{ match.away_team.name }}',this)">
+              <span class="pill-label">No</span><span class="pill-odds">{{ latest_odds.btts_no_odds }}</span>
+            </button>
+          </div>
+          {% else %}
+          <p class="text-xs text-white/30 text-center py-2">Betting closed</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Total (Over/Under) -->
+      <div class="market-block mx-4 mt-1.5 rounded-xl overflow-hidden" style="background:rgba(255,255,255,0.03);">
+        <div class="market-header" onclick="toggleMarket('market-ou')">
+          <div class="flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5 text-teal-400/60" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
+            <span class="market-title">Total</span>
+          </div>
+          <svg id="market-ou-icon" xmlns="http://www.w3.org/2000/svg" class="w-4 h-4 text-white/30 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 9l6 6 6-6"/></svg>
+        </div>
+        <div id="market-ou" class="market-body space-y-2">
+          {% if match.status == 'SCHEDULED' %}
+          <div class="flex gap-2">
+            <button class="odds-pill odds-btn" onclick="toggleSelection('{{ match.id }}','OVER_1_5','{{ latest_odds.over_2_5_odds }}','{{ match.home_team.name }} vs {{ match.away_team.name }}',this)">
+              <span class="pill-label">Over 0.5</span>
+              <span class="pill-odds">{{ latest_odds.over_2_5_odds }}</span>
+            </button>
+            <button class="odds-pill odds-btn" onclick="toggleSelection('{{ match.id }}','UNDER_1_5','{{ latest_odds.under_2_5_odds }}','{{ match.home_team.name }} vs {{ match.away_team.name }}',this)">
+              <span class="pill-label">Under 0.5</span>
+              <span class="pill-odds">{{ latest_odds.under_2_5_odds }}</span>
+            </button>
+          </div>
+          <div class="flex gap-2">
+            <button class="odds-pill odds-btn" onclick="toggleSelection('{{ match.id }}','OVER_2_5','{{ latest_odds.over_2_5_odds }}','{{ match.home_team.name }} vs {{ match.away_team.name }}',this)">
+              <span class="pill-label">Over 1.5</span>
+              <span class="pill-odds">{{ latest_odds.over_2_5_odds }}</span>
+            </button>
+            <button class="odds-pill odds-btn" onclick="toggleSelection('{{ match.id }}','UNDER_2_5','{{ latest_odds.under_2_5_odds }}','{{ match.home_team.name }} vs {{ match.away_team.name }}',this)">
+              <span class="pill-label">Under 1.5</span>
+              <span class="pill-odds">{{ latest_odds.under_2_5_odds }}</span>
+            </button>
+          </div>
+          {% else %}
+          <p class="text-xs text-white/30 text-center py-2">Betting closed</p>
+          {% endif %}
+        </div>
+      </div>
+      {% else %}
+      <div class="mx-4 mt-4 rounded-xl p-6 text-center" style="background:rgba(255,255,255,0.03);">
+        <p class="text-xs text-white/30">No live odds available for this match yet.</p>
+      </div>
+      {% endif %}
+    </div><!-- /sub-main -->
+
+    <!-- Sub-tab Goals -->
+    <div id="sub-goals" class="sub-tab-content hidden">
+      {% if latest_odds and match.status == 'SCHEDULED' %}
+      <div class="space-y-1.5 mt-2">
+        {% for label, market, odds in over_under_lines %}
+        <div class="market-block mx-4 rounded-xl overflow-hidden" style="background:rgba(255,255,255,0.03);">
+          <div class="market-body pt-2.5">
+            <div class="flex gap-2">
+              <button class="odds-pill odds-btn" onclick="toggleSelection('{{ match.id }}','{{ market }}_OVER','{{ odds }}','{{ match.home_team.name }} vs {{ match.away_team.name }}',this)">
+                <span class="pill-label">Over {{ label }}</span><span class="pill-odds">{{ odds }}</span>
+              </button>
+              <button class="odds-pill odds-btn" onclick="toggleSelection('{{ match.id }}','{{ market }}_UNDER','{{ odds }}','{{ match.home_team.name }} vs {{ match.away_team.name }}',this)">
+                <span class="pill-label">Under {{ label }}</span><span class="pill-odds">{{ odds }}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+        {% empty %}
+        <div class="mx-4 rounded-xl p-6 text-center" style="background:rgba(255,255,255,0.03);">
+          <div class="flex gap-2 px-0 pb-2">
+            <button class="odds-pill odds-btn" onclick="toggleSelection('{{ match.id }}','OVER_2_5','{{ latest_odds.over_2_5_odds }}','{{ match.home_team.name }} vs {{ match.away_team.name }}',this)">
+              <span class="pill-label">Over 2.5</span><span class="pill-odds">{{ latest_odds.over_2_5_odds }}</span>
+            </button>
+            <button class="odds-pill odds-btn" onclick="toggleSelection('{{ match.id }}','UNDER_2_5','{{ latest_odds.under_2_5_odds }}','{{ match.home_team.name }} vs {{ match.away_team.name }}',this)">
+              <span class="pill-label">Under 2.5</span><span class="pill-odds">{{ latest_odds.under_2_5_odds }}</span>
+            </button>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="mx-4 mt-4 rounded-xl p-6 text-center" style="background:rgba(255,255,255,0.03);">
+        <p class="text-xs text-white/30">Goals markets unavailable.</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Sub-tab 1st Half -->
+    <div id="sub-1st" class="sub-tab-content hidden">
+      <div class="mx-4 mt-4 rounded-xl p-6 text-center" style="background:rgba(255,255,255,0.03);">
+        <p class="text-2xl mb-2">⏱️</p>
+        <p class="text-xs text-white/30">1st Half markets not available.</p>
+      </div>
+    </div>
+
+    <!-- Sub-tab 2nd Half -->
+    <div id="sub-2nd" class="sub-tab-content hidden">
+      <div class="mx-4 mt-4 rounded-xl p-6 text-center" style="background:rgba(255,255,255,0.03);">
+        <p class="text-2xl mb-2">⏱️</p>
+        <p class="text-xs text-white/30">2nd Half markets not available.</p>
+      </div>
+    </div>
+
+    <!-- Sub-tab Correct Score (AI) -->
+    <div id="sub-cs" class="sub-tab-content hidden">
+      <div id="prediction-container-cs"
+           hx-get="{% url 'predictions:partial' match.id %}"
+           hx-trigger="load"
+           hx-target="this"
+           hx-indicator="#pred-cs-indicator">
+        <div id="pred-cs-indicator" class="px-4 py-8 text-center">
+          <span class="loading loading-spinner loading-md text-teal-400"></span>
+          <p class="text-xs text-white/30 mt-2">Loading AI Prediction...</p>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /tab-main -->
+
+  <!-- TAB: Stats -->
+  <div id="tab-stats" class="tab-content hidden">
+    <!-- AI Prediction Panel (HTMX loaded) -->
+    <div class="px-4 pt-4" id="prediction-container"
+         hx-get="{% url 'predictions:partial' match.id %}"
+         hx-trigger="load"
+         hx-target="this"
+         hx-indicator="#prediction-indicator">
+      <div id="prediction-indicator">
+        {% include 'components/skeleton.html' with type='prediction' %}
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB: Chat -->
+  <div id="tab-chat" class="tab-content hidden">
+    <div class="mx-4 mt-4 rounded-xl p-8 text-center" style="background:rgba(255,255,255,0.03);">
+      <p class="text-3xl mb-3">💬</p>
+      <p class="text-sm font-bold text-white/50">Match Chat</p>
+      <p class="text-xs text-white/25 mt-1">Coming soon – live fan chat during matches.</p>
+    </div>
+  </div>
+
+</div><!-- /bet-detail-bg -->
+
+<script>
+  // ── Tab switching ──
+  function switchTab(btn, tabId) {
+    document.querySelectorAll('.tab-22bet').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.add('hidden'));
+    btn.classList.add('active');
+    document.getElementById(tabId).classList.remove('hidden');
+  }
+
+  function switchSubTab(btn, tabId) {
+    document.querySelectorAll('.sub-tab-22bet').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.sub-tab-content').forEach(t => t.classList.add('hidden'));
+    btn.classList.add('active');
+    document.getElementById(tabId).classList.remove('hidden');
+  }
+
+  // ── Collapsible markets ──
+  function toggleMarket(id) {
+    const body = document.getElementById(id);
+    const icon = document.getElementById(id + '-icon');
+    body.classList.toggle('hidden');
+    if (icon) icon.style.transform = body.classList.contains('hidden') ? 'rotate(-90deg)' : '';
+  }
+
+  // ── Countdown Timer ──
+  const cdRow = document.getElementById('countdown-row');
+  if (cdRow) {
+    const kickoff = new Date(cdRow.dataset.kickoff);
+    function updateCountdown() {
+      const now = new Date();
+      let diff = Math.max(0, Math.floor((kickoff - now) / 1000));
+      const days  = Math.floor(diff / 86400); diff %= 86400;
+      const hours = Math.floor(diff / 3600);  diff %= 3600;
+      const mins  = Math.floor(diff / 60);
+      const secs  = diff % 60;
+      const pad = n => String(n).padStart(2, '0');
+      document.getElementById('cd-days').textContent  = pad(days);
+      document.getElementById('cd-hours').textContent = pad(hours);
+      document.getElementById('cd-mins').textContent  = pad(mins);
+      document.getElementById('cd-secs').textContent  = pad(secs);
+    }
+    updateCountdown();
+    setInterval(updateCountdown, 1000);
+  }
+</script>
 {% endblock %}

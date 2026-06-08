@@ -64,6 +64,27 @@ class PredictionService:
         recommended_pick = picks[0] if picks else f"{match.home_team.name} or Draw"
         is_vip_only = confidence_score >= 85
 
+        # --- AI Exact Score Prediction ---
+        # Use seeded random to deterministically pick a realistic scoreline
+        # consistent with the match probabilities
+        if home_win_prob > 50:
+            # Home win likely — generate a home-favoured score
+            home_goals = random.choices([1, 2, 3], weights=[25, 50, 25])[0]
+            away_goals = random.choices([0, 1], weights=[60, 40])[0]
+            if away_goals >= home_goals:
+                away_goals = max(0, home_goals - 1)
+        elif away_win_prob > 50:
+            # Away win likely
+            away_goals = random.choices([1, 2, 3], weights=[25, 50, 25])[0]
+            home_goals = random.choices([0, 1], weights=[60, 40])[0]
+            if home_goals >= away_goals:
+                home_goals = max(0, away_goals - 1)
+        else:
+            # Draw likely
+            goals = random.choices([0, 1, 2], weights=[30, 50, 20])[0]
+            home_goals = goals
+            away_goals = goals
+
         # Create/Update prediction
         prediction, _ = Prediction.objects.update_or_create(
             match=match,
@@ -77,7 +98,9 @@ class PredictionService:
                 "btts_no_prob": btts_no_prob,
                 "confidence_score": confidence_score,
                 "recommended_pick": recommended_pick,
-                "is_vip_only": is_vip_only
+                "is_vip_only": is_vip_only,
+                "predicted_home_score": home_goals,
+                "predicted_away_score": away_goals,
             }
         )
 
