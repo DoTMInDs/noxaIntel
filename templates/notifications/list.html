@@ -54,8 +54,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const actionBtn = document.getElementById('push-action-btn');
     const testBtn = document.getElementById('push-test-btn');
 
-    function updateUI() {
-        if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+    async function updateUI() {
+        if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
             // Push not supported by this browser
             card.classList.add('hidden');
             return;
@@ -64,7 +64,20 @@ document.addEventListener('DOMContentLoaded', function() {
         card.classList.remove('hidden');
 
         const permission = Notification.permission;
-        const isSubscribedLocal = localStorage.getItem('noxa-push-subscribed') === '1';
+        
+        // Asynchronously check actual active registration in browser
+        let hasActiveSubscription = false;
+        try {
+            const reg = await navigator.serviceWorker.getRegistration('/');
+            if (reg && reg.pushManager) {
+                const sub = await reg.pushManager.getSubscription();
+                hasActiveSubscription = (sub !== null);
+            }
+        } catch (err) {
+            console.warn('[Notifications] Error checking push subscription:', err);
+        }
+
+        const isSubscribedLocal = hasActiveSubscription && (localStorage.getItem('noxa-push-subscribed') === '1');
 
         if (permission === 'denied') {
             iconWrapper.className = 'w-12 h-12 rounded-2xl bg-error/10 border border-error/20 flex items-center justify-center text-2xl flex-shrink-0';
@@ -106,9 +119,9 @@ document.addEventListener('DOMContentLoaded', function() {
                 actionBtn.textContent = 'Subscribing...';
                 const success = await window.noxaPush.subscribe(false);
                 actionBtn.disabled = false;
-                updateUI();
+                await updateUI();
             } else {
-                updateUI();
+                await updateUI();
             }
         } else {
             localStorage.removeItem('noxa-push-dismissed');

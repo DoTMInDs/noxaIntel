@@ -46,6 +46,10 @@
 - `[x]` Frontend & Navigation Updates
   - `[x]` Update `templates/base.html` for strict mobile-first styling and HTMX boost/swaps
   - `[x]` Create mobile sticky bottom nav tab bar: `templates/components/bottom_nav.html`
+  - `[x]` Modify `templates/components/push_prompt.html` to query active subscription and clear invalid states on failure
+  - `[x]` Modify `templates/users/profile.html` to asynchronously check actual push manager registration
+  - `[x]` Modify `templates/notifications/list.html` to asynchronously check actual push manager registration
+  - `[x]` Verify the templates load correctly and there are no syntax/JavaScript errors
 - `[x]` Voice Assistant Integration
   - `[x]` Modify `ai_engine/views.py` and `ai_engine/urls.py` to route queries through `VoiceService` and `AIChatService`
   - `[x]` Redesign `templates/ai_engine/assistant.html` to support Push-to-Talk and optional "Hey Bet" wake word recognition settings

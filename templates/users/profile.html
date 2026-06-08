@@ -117,16 +117,29 @@ document.addEventListener('DOMContentLoaded', function() {
     const warning = document.getElementById('push-device-warning');
     const enableBtn = document.getElementById('profile-enable-push-btn');
 
-    function checkProfilePushStatus() {
+    async function checkProfilePushStatus() {
         if (!warning) return;
 
-        if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
             warning.classList.add('hidden');
             return;
         }
 
         const permission = Notification.permission;
-        const isSubscribedLocal = localStorage.getItem('noxa-push-subscribed') === '1';
+        
+        // Asynchronously check actual active registration in browser
+        let hasActiveSubscription = false;
+        try {
+            const reg = await navigator.serviceWorker.getRegistration('/');
+            if (reg && reg.pushManager) {
+                const sub = await reg.pushManager.getSubscription();
+                hasActiveSubscription = (sub !== null);
+            }
+        } catch (err) {
+            console.warn('[Profile] Error checking push subscription:', err);
+        }
+
+        const isSubscribedLocal = hasActiveSubscription && (localStorage.getItem('noxa-push-subscribed') === '1');
 
         const checkbox = document.getElementById('id_push_notifications');
         const isToggledOn = checkbox ? checkbox.checked : false;
@@ -155,7 +168,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             enableBtn.disabled = false;
             enableBtn.textContent = 'Register This Device';
-            checkProfilePushStatus();
+            await checkProfilePushStatus();
         });
     }
 

@@ -263,6 +263,10 @@
       }
     } catch (err) {
       console.error('[NoxaIntel Push] subscribe error:', err);
+      // Clean up local storage subscription key on failure, since it's not valid on the server!
+      localStorage.removeItem(SUBSCRIBED_KEY);
+      window.dispatchEvent(new Event('noxa-push-status-changed'));
+
       if (!silent) {
         statusEl.textContent  = '❌ Failed';
         enableBtn.disabled    = false;
@@ -276,27 +280,29 @@
   // ── Initialisation ────────────────────────────────────────────────────────
   async function init() {
     // Skip entirely if browser doesn't support push or VAPID key is missing
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return;
     if (!VAPID_PUBLIC_KEY) {
       console.warn('[NoxaIntel Push] VAPID_PUBLIC_KEY is not set. Push notifications disabled.');
       return;
     }
 
+    // If already subscribed this browser — check if still valid
+    if (localStorage.getItem(SUBSCRIBED_KEY)) {
+      const success = await subscribe(true); // refresh silently
+      if (success) {
+        return;
+      }
+    }
+
     // If permission is already granted, silently re-subscribe in background
     // (ensures subscription is always up-to-date after token rotation)
     if (Notification.permission === 'granted') {
-      subscribe(true); // fire-and-forget
+      await subscribe(true); // fire-and-forget
       return;          // don't show the prompt
     }
 
     // If the user permanently dismissed or permission was denied — do nothing
     if (localStorage.getItem(DISMISS_KEY) || Notification.permission === 'denied') return;
-
-    // If already subscribed this browser — skip prompt
-    if (localStorage.getItem(SUBSCRIBED_KEY)) {
-      subscribe(true); // refresh silently
-      return;
-    }
 
     // Show the prompt after a short delay (let the page settle)
     setTimeout(showPrompt, 1500);
