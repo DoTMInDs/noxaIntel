@@ -161,6 +161,16 @@
       }
     }
 
+    // 2. If no registration exists, register it on the fly
+    if (!reg) {
+      console.log('[NoxaIntel Push] No active service worker found. Registering on the fly...');
+      try {
+        reg = await navigator.serviceWorker.register('{% url "pwa:serviceworker" %}', { scope: '/' });
+      } catch (err) {
+        throw new Error('Service Worker registration failed: ' + err.message);
+      }
+    }
+
     if (reg) {
       if (reg.active) {
         if (!reg.pushManager) throw new Error('PushManager not available on this SW registration');
