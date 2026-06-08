@@ -257,6 +257,7 @@
         statusEl.textContent  = '❌ Failed';
         enableBtn.disabled    = false;
         enableBtn.textContent = 'Enable Alerts';
+        alert('Push Subscription Failed:\n\nError: ' + err.message + '\n\nPlease screenshot this error.');
       }
       return false;
     }
