@@ -9,11 +9,19 @@
     background: linear-gradient(160deg, #0a2a2a 0%, #0d3535 40%, #091e1e 100%);
     min-height: 100vh;
   }
+  [data-theme="light"] .bet-detail-bg {
+    background: #f1f5f9;
+    min-height: 100vh;
+  }
   .match-header-card {
     background: linear-gradient(135deg, #0f3d3d 0%, #0a2828 60%, #061a1a 100%);
     border: 1px solid rgba(20,184,166,0.18);
     position: relative;
     overflow: hidden;
+  }
+  [data-theme="light"] .match-header-card {
+    background: linear-gradient(135deg, #0d9488 0%, #0f766e 60%, #115e59 100%);
+    border: 1px solid rgba(255,255,255,0.15);
   }
   .match-header-card::before {
     content: '';
@@ -37,11 +45,19 @@
     letter-spacing: 0;
     white-space: nowrap;
   }
+  [data-theme="light"] .tab-22bet {
+    color: rgba(255,255,255,0.65);
+  }
   .tab-22bet.active {
     color: #5eead4;
     border-bottom-color: #5eead4;
   }
+  [data-theme="light"] .tab-22bet.active {
+    color: #fff;
+    border-bottom-color: #fff;
+  }
   .tab-22bet:hover:not(.active) { color: rgba(255,255,255,0.7); }
+  [data-theme="light"] .tab-22bet:hover:not(.active) { color: #fff; }
   .sub-tab-22bet {
     color: rgba(255,255,255,0.4);
     font-size: 0.7rem;
@@ -52,9 +68,16 @@
     transition: all 0.15s;
     white-space: nowrap;
   }
+  [data-theme="light"] .sub-tab-22bet {
+    color: rgba(15,23,42,0.6);
+  }
   .sub-tab-22bet.active {
     background: rgba(94,234,212,0.15);
     color: #5eead4;
+  }
+  [data-theme="light"] .sub-tab-22bet.active {
+    background: rgba(20,184,166,0.15);
+    color: #0f766e;
   }
   .countdown-block {
     display: flex;
