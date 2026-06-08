@@ -245,7 +245,7 @@
 {% if prediction %}
   {% if prediction.is_vip_only and not user.profile.subscription_tier.access_vip_tips %}
     <!-- VIP Lock Paywall -->
-    <div class="paywall-box mx-4 my-2 rounded-2xl overflow-hidden relative">
+    <div class="paywall-box my-2 rounded-2xl overflow-hidden relative">
       <div class="paywall-overlay absolute inset-0 backdrop-blur-md z-10 flex flex-col justify-center items-center text-center p-6 space-y-3">
         <div class="w-14 h-14 rounded-full flex items-center justify-center text-3xl" style="background:rgba(234,179,8,0.1); border:1px solid rgba(234,179,8,0.2);">🔒</div>
         <h3 class="font-black text-xl text-base-content">VIP AI Analysis Locked</h3>
@@ -266,7 +266,7 @@
 
   <!-- ① AI Exact Score Card (hero element) -->
   {% if prediction.predicted_exact_score and match.status == 'SCHEDULED' %}
-  <div class="mx-4 my-2">
+  <div class="my-2">
     <div class="ai-score-card">
       <div class="flex items-start justify-between gap-3 mb-3">
         <div>
@@ -299,7 +299,7 @@
   {% endif %}
 
   <!-- ② 1X2 Probability Bar -->
-  <div class="prediction-card-box mx-4 my-2 rounded-xl p-4 space-y-3">
+  <div class="prediction-card-box my-4 rounded-xl p-4 space-y-3">
     <div class="flex items-center justify-between mb-1">
       <span class="text-[10px] font-black uppercase tracking-widest text-teal-400">AI Probability</span>
       <span class="text-[9px] text-base-content/40 font-semibold">Live model weights</span>
@@ -346,7 +346,7 @@
   <!-- ③ Over/Under & BTTS in a grid -->
   {% if match.status == 'SCHEDULED' %}
   {% with match.odds_snapshots.first as odds %}{% if odds %}
-  <div class="mx-4 my-2 grid grid-cols-1 md:grid-cols-2 gap-3">
+  <div class=" my-2 grid grid-cols-1 md:grid-cols-2 gap-3">
 
     <!-- Over/Under -->
     <div class="prediction-card-box rounded-xl p-3 space-y-2.5">
@@ -422,7 +422,7 @@
 
   <!-- ④ AI Verdict -->
   {% if ai_analysis %}
-  <div class="prediction-card-box mx-4 my-2 rounded-xl p-4 space-y-3">
+  <div class="prediction-card-box my-4 rounded-xl p-4 space-y-3">
     <div class="flex items-center justify-between flex-wrap gap-2">
       <div>
         <span class="text-[10px] font-black uppercase tracking-widest text-teal-400">AI Recommended Pick</span>
