@@ -125,7 +125,10 @@
   }
 
   function hidePrompt(permanent) {
-    if (permanent) localStorage.setItem(DISMISS_KEY, '1');
+    if (permanent) {
+      localStorage.setItem(DISMISS_KEY, '1');
+      window.dispatchEvent(new Event('noxa-push-status-changed'));
+    }
     prompt.style.transition = 'opacity 0.25s, transform 0.25s';
     prompt.style.opacity    = '0';
     prompt.style.transform  = 'translateY(16px)';
@@ -196,6 +199,7 @@
 
       if (data.status === 'ok') {
         localStorage.setItem(SUBSCRIBED_KEY, '1');
+        window.dispatchEvent(new Event('noxa-push-status-changed'));
         if (!silent) {
           statusEl.textContent   = '✅';
           enableBtn.textContent  = 'Done!';
@@ -218,8 +222,12 @@
 
   // ── Initialisation ────────────────────────────────────────────────────────
   async function init() {
-    // Skip entirely if browser doesn't support push
+    // Skip entirely if browser doesn't support push or VAPID key is missing
     if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+    if (!VAPID_PUBLIC_KEY) {
+      console.warn('[NoxaIntel Push] VAPID_PUBLIC_KEY is not set. Push notifications disabled.');
+      return;
+    }
 
     // If permission is already granted, silently re-subscribe in background
     // (ensures subscription is always up-to-date after token rotation)
@@ -256,6 +264,14 @@
       await subscribe(false);
     });
   }
+
+  // Expose to window so other components can interact with push features
+  window.noxaPush = {
+    showPrompt: showPrompt,
+    subscribe: subscribe,
+    DISMISS_KEY: DISMISS_KEY,
+    SUBSCRIBED_KEY: SUBSCRIBED_KEY
+  };
 
   // Run after page fully loads so the service worker has time to register
   if (document.readyState === 'complete') {

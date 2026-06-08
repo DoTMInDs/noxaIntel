@@ -19,6 +19,19 @@
                     <div id="profile-form-container">
                         {% include 'users/partials/profile_form.html' %}
                     </div>
+                    <!-- Device Push Notification Check Warning -->
+                    <div id="push-device-warning" class="mt-4 p-3.5 rounded-xl bg-warning/10 border border-warning/20 text-warning text-xs hidden flex flex-col gap-2">
+                        <div class="flex items-start gap-2">
+                            <span class="text-base">⚠️</span>
+                            <div>
+                                <p class="font-bold">Device Notifications Inactive</p>
+                                <p class="opacity-80 mt-0.5">This device/browser is not registered to receive push notifications.</p>
+                            </div>
+                        </div>
+                        <button type="button" id="profile-enable-push-btn" class="btn btn-warning btn-xs font-bold rounded-lg w-full mt-1">
+                            Register This Device
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -96,4 +109,70 @@
         </div>
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const warning = document.getElementById('push-device-warning');
+    const enableBtn = document.getElementById('profile-enable-push-btn');
+
+    function checkProfilePushStatus() {
+        if (!warning) return;
+
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+            warning.classList.add('hidden');
+            return;
+        }
+
+        const permission = Notification.permission;
+        const isSubscribedLocal = localStorage.getItem('noxa-push-subscribed') === '1';
+
+        const checkbox = document.getElementById('id_push_notifications');
+        const isToggledOn = checkbox ? checkbox.checked : false;
+
+        if (isToggledOn && (permission !== 'granted' || !isSubscribedLocal)) {
+            warning.classList.remove('hidden');
+        } else {
+            warning.classList.add('hidden');
+        }
+    }
+
+    if (enableBtn) {
+        enableBtn.addEventListener('click', async () => {
+            enableBtn.disabled = true;
+            enableBtn.textContent = 'Registering...';
+            localStorage.removeItem('noxa-push-dismissed');
+            if (window.noxaPush) {
+                const success = await window.noxaPush.subscribe(false);
+                if (success) {
+                    const checkbox = document.getElementById('id_push_notifications');
+                    if (checkbox && !checkbox.checked) {
+                        checkbox.checked = true;
+                        checkbox.form.requestSubmit();
+                    }
+                }
+            }
+            enableBtn.disabled = false;
+            enableBtn.textContent = 'Register This Device';
+            checkProfilePushStatus();
+        });
+    }
+
+    document.addEventListener('change', function(e) {
+        if (e.target && e.target.id === 'id_push_notifications') {
+            checkProfilePushStatus();
+        }
+    });
+
+    document.addEventListener('htmx:afterSwap', function(e) {
+        if (e.detail.target && e.detail.target.id === 'profile-form-container') {
+            checkProfilePushStatus();
+        }
+    });
+
+    checkProfilePushStatus();
+    window.addEventListener('noxa-push-status-changed', checkProfilePushStatus);
+});
+</script>
 {% endblock %}

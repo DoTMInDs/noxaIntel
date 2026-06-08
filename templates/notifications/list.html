@@ -13,9 +13,140 @@
         <span class="badge badge-primary font-bold">Inbox</span>
     </div>
 
+    <!-- Push Notification Status Card -->
+    <div id="push-settings-card" class="card border transition-all duration-200 hidden bg-gradient-to-br from-base-200/50 to-base-100 border-base-200 shadow-xl rounded-2xl">
+        <div class="card-body p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div class="flex items-start sm:items-center gap-4">
+                <div class="w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-2xl flex-shrink-0" id="push-status-icon-wrapper">
+                    <span id="push-status-icon">🔔</span>
+                </div>
+                <div>
+                    <h3 class="font-black text-base tracking-tight" id="push-status-title">Push Notifications</h3>
+                    <p class="text-xs opacity-70 mt-1 max-w-md leading-relaxed" id="push-status-desc">Stay updated with instant match alerts, goals, and betting tips.</p>
+                </div>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 w-full sm:w-auto mt-2 sm:mt-0">
+                <button id="push-action-btn" class="btn btn-primary btn-sm font-bold shadow-md shadow-primary/15 rounded-xl flex-1 sm:flex-initial min-w-[100px]">
+                    Enable
+                </button>
+                <button id="push-test-btn" class="btn btn-ghost btn-sm font-semibold border border-base-300 rounded-xl hidden">
+                    Send Test Push
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Notifications List Wrapper -->
     <div id="notifications-list-container">
         {% include 'notifications/partials/list_items.html' %}
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const card = document.getElementById('push-settings-card');
+    const iconWrapper = document.getElementById('push-status-icon-wrapper');
+    const icon = document.getElementById('push-status-icon');
+    const title = document.getElementById('push-status-title');
+    const desc = document.getElementById('push-status-desc');
+    const actionBtn = document.getElementById('push-action-btn');
+    const testBtn = document.getElementById('push-test-btn');
+
+    function updateUI() {
+        if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+            // Push not supported by this browser
+            card.classList.add('hidden');
+            return;
+        }
+
+        card.classList.remove('hidden');
+
+        const permission = Notification.permission;
+        const isSubscribedLocal = localStorage.getItem('noxa-push-subscribed') === '1';
+
+        if (permission === 'denied') {
+            iconWrapper.className = 'w-12 h-12 rounded-2xl bg-error/10 border border-error/20 flex items-center justify-center text-2xl flex-shrink-0';
+            icon.textContent = '🔇';
+            title.textContent = 'Notifications Blocked';
+            desc.textContent = 'Please enable notification permissions in your browser settings to receive real-time alerts.';
+            actionBtn.textContent = 'Blocked';
+            actionBtn.className = 'btn btn-disabled btn-sm font-bold rounded-xl flex-1 sm:flex-initial';
+            actionBtn.disabled = true;
+            testBtn.classList.add('hidden');
+        } else if (permission === 'granted' && isSubscribedLocal) {
+            iconWrapper.className = 'w-12 h-12 rounded-2xl bg-success/10 border border-success/20 flex items-center justify-center text-2xl flex-shrink-0';
+            icon.textContent = '🔔';
+            title.textContent = 'Push Alerts Active';
+            desc.textContent = 'This browser is successfully registered to receive instant goals and VIP predictions.';
+            actionBtn.textContent = 'Reset Alert Settings';
+            actionBtn.className = 'btn btn-ghost btn-sm font-semibold border border-base-300 hover:bg-base-200/50 rounded-xl flex-1 sm:flex-initial';
+            actionBtn.disabled = false;
+            testBtn.classList.remove('hidden');
+        } else {
+            // default or not subscribed
+            iconWrapper.className = 'w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20 flex items-center justify-center text-2xl flex-shrink-0';
+            icon.textContent = '🔕';
+            title.textContent = 'Push Alerts Inactive';
+            desc.textContent = 'Enable instant push notifications to get high-confidence tips before they change.';
+            actionBtn.textContent = 'Enable Alerts';
+            actionBtn.className = 'btn btn-primary btn-sm font-bold shadow-md shadow-primary/15 rounded-xl flex-1 sm:flex-initial';
+            actionBtn.disabled = false;
+            testBtn.classList.add('hidden');
+        }
+    }
+
+    actionBtn.addEventListener('click', async () => {
+        if (actionBtn.textContent.includes('Reset')) {
+            localStorage.removeItem('noxa-push-dismissed');
+            localStorage.removeItem('noxa-push-subscribed');
+            if (window.noxaPush) {
+                actionBtn.disabled = true;
+                actionBtn.textContent = 'Subscribing...';
+                const success = await window.noxaPush.subscribe(false);
+                actionBtn.disabled = false;
+                updateUI();
+            } else {
+                updateUI();
+            }
+        } else {
+            localStorage.removeItem('noxa-push-dismissed');
+            if (window.noxaPush) {
+                window.noxaPush.showPrompt();
+            }
+        }
+    });
+
+    testBtn.addEventListener('click', async () => {
+        testBtn.disabled = true;
+        testBtn.textContent = 'Sending...';
+        try {
+            const resp = await fetch('{% url "notifications:push_test" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            });
+            const data = await resp.json();
+            if (data.status === 'ok') {
+                const originalText = desc.textContent;
+                desc.innerHTML = '<span class="text-success font-semibold">✅ Test notification sent! Check your system tray.</span>';
+                setTimeout(() => { updateUI(); }, 4000);
+            } else {
+                alert('Test push failed: ' + data.message);
+            }
+        } catch(e) {
+            console.error(e);
+            alert('Failed to send test push. Please verify your connection.');
+        }
+        testBtn.disabled = false;
+        testBtn.textContent = 'Send Test Push';
+    });
+
+    updateUI();
+    window.addEventListener('noxa-push-status-changed', updateUI);
+});
+</script>
 {% endblock %}
