@@ -12,4 +12,5 @@ urlpatterns = [
     path('push/subscribe/', views.save_push_subscription, name='push_subscribe'),
     path('push/unsubscribe/', views.delete_push_subscription, name='push_unsubscribe'),
     path('push/test/', views.send_test_push, name='push_test'),
+    path('push/debug/', views.push_debug, name='push_debug'),
 ]

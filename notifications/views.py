@@ -109,3 +109,45 @@ def send_test_push(request):
         url='/notifications/',
     )
     return JsonResponse({'status': 'ok', 'message': 'Test push sent'})
+
+
+@login_required
+def push_debug(request):
+    """
+    Diagnostic endpoint to debug VAPID key loading on Render.
+    Visit /notifications/push/debug/ to see what's happening.
+    """
+    import os
+    from django.conf import settings
+
+    vapid_from_settings = getattr(settings, 'VAPID_PUBLIC_KEY', '')
+    vapid_from_os = os.environ.get('VAPID_PUBLIC_KEY', '')
+    private_from_settings = getattr(settings, 'VAPID_PRIVATE_KEY', '')
+    private_from_os = os.environ.get('VAPID_PRIVATE_KEY', '')
+
+    # Check if the context processor is registered
+    context_processors = []
+    for tpl in settings.TEMPLATES:
+        context_processors = tpl.get('OPTIONS', {}).get('context_processors', [])
+
+    debug_info = {
+        'vapid_public_key': {
+            'from_settings': vapid_from_settings[:30] + '...' if vapid_from_settings else '(EMPTY)',
+            'from_os_environ': vapid_from_os[:30] + '...' if vapid_from_os else '(EMPTY)',
+            'length_settings': len(vapid_from_settings),
+            'length_os': len(vapid_from_os),
+        },
+        'vapid_private_key': {
+            'from_settings': '***SET***' if private_from_settings else '(EMPTY)',
+            'from_os_environ': '***SET***' if private_from_os else '(EMPTY)',
+            'length_settings': len(private_from_settings),
+            'length_os': len(private_from_os),
+        },
+        'vapid_admin_email': getattr(settings, 'VAPID_ADMIN_EMAIL', '(NOT SET)'),
+        'context_processors_registered': context_processors,
+        'debug_mode': settings.DEBUG,
+        'env_var_names_containing_vapid': [
+            k for k in os.environ.keys() if 'VAPID' in k.upper()
+        ],
+    }
+    return JsonResponse(debug_info, json_dumps_params={'indent': 2})

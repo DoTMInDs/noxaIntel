@@ -229,9 +229,16 @@ STORAGES = {
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 # VAPID Keys for Web Push Notifications
-VAPID_PUBLIC_KEY = env('VAPID_PUBLIC_KEY')
-VAPID_PRIVATE_KEY = env('VAPID_PRIVATE_KEY')
-VAPID_ADMIN_EMAIL = env('VAPID_ADMIN_EMAIL')
+# Use django-environ first, fall back to os.environ (Render sets env vars directly)
+VAPID_PUBLIC_KEY = env('VAPID_PUBLIC_KEY') or os.environ.get('VAPID_PUBLIC_KEY', '')
+VAPID_PRIVATE_KEY = env('VAPID_PRIVATE_KEY') or os.environ.get('VAPID_PRIVATE_KEY', '')
+VAPID_ADMIN_EMAIL = env('VAPID_ADMIN_EMAIL') or os.environ.get('VAPID_ADMIN_EMAIL', 'admin@noxaintel.com')
+
+# Startup diagnostics — visible in Render logs
+import logging as _logging
+_startup_logger = _logging.getLogger('config.settings')
+_startup_logger.info(f"VAPID_PUBLIC_KEY loaded: {'YES (' + VAPID_PUBLIC_KEY[:20] + '...)' if VAPID_PUBLIC_KEY else 'EMPTY/MISSING'}")
+_startup_logger.info(f"VAPID_PRIVATE_KEY loaded: {'YES (len={})'.format(len(VAPID_PRIVATE_KEY)) if VAPID_PRIVATE_KEY else 'EMPTY/MISSING'}")
 
 # Celery Configuration
 CELERY_BROKER_URL = env('REDIS_URL')

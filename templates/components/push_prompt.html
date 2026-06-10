@@ -100,7 +100,18 @@
 (function () {
   'use strict';
 
-  const VAPID_PUBLIC_KEY = "{{ VAPID_PUBLIC_KEY }}";
+  // Read from meta tag in <head> (always present) — more reliable than template var inside auth block
+  const _metaVapid = document.querySelector('meta[name="vapid-public-key"]')?.content;
+  const _templateVapid = "{{ VAPID_PUBLIC_KEY }}";
+  const VAPID_PUBLIC_KEY = (_metaVapid && _metaVapid !== '' && !_metaVapid.startsWith('{{'))
+    ? _metaVapid
+    : (_templateVapid && !_templateVapid.startsWith('{{') ? _templateVapid : '');
+
+  // Debug logging — check browser console on Render to see what's happening
+  console.log('[NoxaIntel Push] VAPID meta tag value:', JSON.stringify(_metaVapid));
+  console.log('[NoxaIntel Push] VAPID template value:', JSON.stringify(_templateVapid));
+  console.log('[NoxaIntel Push] VAPID resolved key:', VAPID_PUBLIC_KEY ? VAPID_PUBLIC_KEY.substring(0, 20) + '...' : '(EMPTY)');
+
   const SUBSCRIBE_URL    = '{% url "notifications:push_subscribe" %}';
   const DISMISS_KEY      = 'noxa-push-dismissed';   // localStorage — persists across sessions
   const SUBSCRIBED_KEY   = 'noxa-push-subscribed';  // localStorage — marks a successful save
