@@ -153,6 +153,61 @@ class IntentRouter:
         q = query.strip().lower()
         history = history or []
 
+        # Try Groq-powered semantic routing
+        try:
+            from services.groq_client import GroqClient
+            client = GroqClient()
+            system_prompt = (
+                "You are an expert intent router for a football analytics and betting assistant. "
+                "Your task is to classify the user's query into one of these INTENT codes:\n"
+                "- MATCH_PREDICTION\n- WINNING_PROBABILITY\n- SCORE_PREDICTION\n- TEAM_ANALYSIS\n"
+                "- PLAYER_ANALYSIS\n- LIVE_MATCH_LOOKUP\n- FIXTURES_LOOKUP\n- STANDINGS_LOOKUP\n"
+                "- INJURY_LOOKUP\n- ODDS_ANALYSIS\n- BETTING_ADVICE\n- OVER_UNDER_ANALYSIS\n"
+                "- BTTS_ANALYSIS\n- H2H_ANALYSIS\n- USER_BET_ANALYSIS\n- GENERAL_FOOTBALL\n\n"
+                "Extract entities:\n"
+                "- teams: list of canonical team names in query/history (e.g. ['Arsenal', 'Chelsea'])\n"
+                "- player: string or null\n"
+                "- league: string or null\n\n"
+                "Use the chat history to resolve follow-up queries or pronouns.\n"
+                "You must respond ONLY with a valid JSON object matching this schema:\n"
+                "{\n"
+                "  \"intent\": \"INTENT_CODE\",\n"
+                "  \"confidence\": 0.95,\n"
+                "  \"teams\": [\"Team A\", \"Team B\"],\n"
+                "  \"player\": \"Player Name\",\n"
+                "  \"league\": \"League Name\"\n"
+                "}"
+            )
+            messages = [{"role": "system", "content": system_prompt}]
+            for h_msg in history[-5:]:
+                role = "user" if h_msg.get('sender') == 'user' else "assistant"
+                messages.append({"role": role, "content": h_msg.get('text', '')})
+            
+            messages.append({"role": "user", "content": query})
+            
+            res = client.generate_chat_completion(messages, temperature=0.0, response_format={"type": "json_object"})
+            if res:
+                import json
+                parsed = json.loads(res)
+                intent = parsed.get("intent", "GENERAL_FOOTBALL")
+                if intent not in cls.INTENTS:
+                    intent = "GENERAL_FOOTBALL"
+                
+                teams = parsed.get("teams", [])
+                player = parsed.get("player")
+                league = parsed.get("league")
+                
+                params = {
+                    'teams': teams,
+                    'player': player,
+                    'league': league,
+                    'resolved_from_history': True
+                }
+                logger.info(f"[IntentRouter Groq] Routed '{query}' -> Intent: {intent}, Params: {params}")
+                return intent, params
+        except Exception as e:
+            logger.warning(f"Groq intent routing failed: {e}. Falling back to rule-based router.")
+
         # 1. Parameter extraction
         teams = cls.extract_teams(q)
         player = cls.extract_player(q)

@@ -91,6 +91,63 @@ class FootballApiService:
             print(f"Using simulated fixtures fallback for status: {status}")
             self._generate_mock_fixtures(status)
 
+    def _save_match_and_detect_events(self, match_id, league, home_team, away_team, match_date, db_status, home_score, away_score, minute):
+        """Saves a match and triggers Celery push alert tasks if a key event occurs."""
+        try:
+            existing_match = Match.objects.filter(id=match_id).first()
+        except Exception:
+            existing_match = None
+
+        match, created = Match.objects.update_or_create(
+            id=match_id,
+            defaults={
+                "league": league,
+                "home_team": home_team,
+                "away_team": away_team,
+                "match_date": match_date,
+                "status": db_status,
+                "home_score": home_score,
+                "away_score": away_score,
+                "minute": minute
+            }
+        )
+        
+        # If it's a new match or we don't have an existing record, we don't trigger alerts
+        if not existing_match:
+            CacheService.invalidate_match(match.id)
+            return match
+
+        # Detect start of match
+        if existing_match.status == 'SCHEDULED' and db_status == 'LIVE':
+            from notifications.tasks import send_live_match_alert
+            send_live_match_alert.delay(match.id, 'START')
+
+        # Detect half-time (HT)
+        if existing_match.minute != 'HT' and minute == 'HT':
+            from notifications.tasks import send_live_match_alert
+            send_live_match_alert.delay(match.id, 'HT')
+
+        # Detect full-time (FT)
+        if existing_match.status == 'LIVE' and db_status == 'FINISHED':
+            from notifications.tasks import send_live_match_alert
+            send_live_match_alert.delay(match.id, 'FT')
+
+        # Detect goals
+        old_home = existing_match.home_score or 0
+        old_away = existing_match.away_score or 0
+        new_home = home_score or 0
+        new_away = away_score or 0
+        
+        if new_home > old_home:
+            from notifications.tasks import send_live_match_alert
+            send_live_match_alert.delay(match.id, 'GOAL', {'team_name': home_team.name})
+        elif new_away > old_away:
+            from notifications.tasks import send_live_match_alert
+            send_live_match_alert.delay(match.id, 'GOAL', {'team_name': away_team.name})
+
+        CacheService.invalidate_match(match.id)
+        return match
+
     def _fetch_from_api_football(self, status):
         """Queries API-Football API (either direct API-Sports or via RapidAPI)."""
         is_direct = len(self.api_football_key) == 32
@@ -172,20 +229,18 @@ class FootballApiService:
             
             match_date = datetime.fromisoformat(fixture['date'].replace('Z', '+00:00'))
             
-            match, created = Match.objects.update_or_create(
-                id=fixture['id'],
-                defaults={
-                    "league": league,
-                    "home_team": home_team,
-                    "away_team": away_team,
-                    "match_date": match_date,
-                    "status": db_status,
-                    "home_score": goals.get('home'),
-                    "away_score": goals.get('away'),
-                    "minute": f"{fixture['status'].get('elapsed') or ''}'" if db_status == 'LIVE' else ('FT' if db_status == 'FINISHED' else None)
-                }
+            minute_str = f"{fixture['status'].get('elapsed') or ''}'" if db_status == 'LIVE' else ('HT' if fixture['status']['short'] == 'HT' else ('FT' if db_status == 'FINISHED' else None))
+            self._save_match_and_detect_events(
+                match_id=fixture['id'],
+                league=league,
+                home_team=home_team,
+                away_team=away_team,
+                match_date=match_date,
+                db_status=db_status,
+                home_score=goals.get('home'),
+                away_score=goals.get('away'),
+                minute=minute_str
             )
-            CacheService.invalidate_match(match.id)
 
     def _fetch_from_football_data_org(self, status):
         """Queries Football-Data.org API."""
@@ -249,20 +304,18 @@ class FootballApiService:
             
             match_date = datetime.fromisoformat(m['utcDate'].replace('Z', '+00:00'))
             
-            match, _ = Match.objects.update_or_create(
-                id=m['id'],
-                defaults={
-                    "league": league,
-                    "home_team": home_team,
-                    "away_team": away_team,
-                    "match_date": match_date,
-                    "status": db_status,
-                    "home_score": m.get('score', {}).get('fullTime', {}).get('home'),
-                    "away_score": m.get('score', {}).get('fullTime', {}).get('away'),
-                    "minute": "Live" if db_status == 'LIVE' else ('FT' if db_status == 'FINISHED' else None)
-                }
+            minute_str = "HT" if m.get('status') == 'PAUSED' else ("Live" if db_status == 'LIVE' else ('FT' if db_status == 'FINISHED' else None))
+            self._save_match_and_detect_events(
+                match_id=m['id'],
+                league=league,
+                home_team=home_team,
+                away_team=away_team,
+                match_date=match_date,
+                db_status=db_status,
+                home_score=m.get('score', {}).get('fullTime', {}).get('home'),
+                away_score=m.get('score', {}).get('fullTime', {}).get('away'),
+                minute=minute_str
             )
-            CacheService.invalidate_match(match.id)
 
     def _generate_mock_fixtures(self, status):
         """Fills database with dynamic simulated fixture objects for demonstration."""
@@ -303,17 +356,14 @@ class FootballApiService:
                     away_score = None
                     minute = None
                     
-                match, _ = Match.objects.update_or_create(
-                    id=match_id,
-                    defaults={
-                        "league": league,
-                        "home_team": home,
-                        "away_team": away,
-                        "match_date": match_date,
-                        "status": status,
-                        "home_score": home_score,
-                        "away_score": away_score,
-                        "minute": minute
-                    }
+                self._save_match_and_detect_events(
+                    match_id=match_id,
+                    league=league,
+                    home_team=home,
+                    away_team=away,
+                    match_date=match_date,
+                    db_status=status,
+                    home_score=home_score,
+                    away_score=away_score,
+                    minute=minute
                 )
-                CacheService.invalidate_match(match.id)

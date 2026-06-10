@@ -24,7 +24,32 @@ env = environ.Env(
     VAPID_PUBLIC_KEY=(str, ''),
     VAPID_PRIVATE_KEY=(str, ''),
     VAPID_ADMIN_EMAIL=(str, 'admin@noxaintel.com'),
+    GROQ_API_KEY=(str, ''),
+    GROQ_MODEL=(str, 'llama-3.3-70b-versatile'),
+    FCM_CREDENTIALS_JSON=(str, ''),
+    FCM_PROJECT_ID=(str, ''),
 )
+
+GROQ_API_KEY = env('GROQ_API_KEY')
+GROQ_MODEL = env('GROQ_MODEL')
+FCM_CREDENTIALS_JSON = env('FCM_CREDENTIALS_JSON')
+FCM_PROJECT_ID = env('FCM_PROJECT_ID')
+
+# Fallback to local service account file if environment variables are not provided
+if not FCM_CREDENTIALS_JSON or not FCM_PROJECT_ID:
+    import json
+    _firebase_json_path = BASE_DIR / 'secrets' / 'firebase-admin.json'
+    if _firebase_json_path.exists():
+        try:
+            with open(_firebase_json_path, 'r', encoding='utf-8') as _f:
+                _content = _f.read()
+                _data = json.loads(_content)
+                if not FCM_CREDENTIALS_JSON:
+                    FCM_CREDENTIALS_JSON = _content
+                if not FCM_PROJECT_ID:
+                    FCM_PROJECT_ID = _data.get('project_id', '')
+        except Exception:
+            pass
 
 # ngrok configuration for local development
 if env('DEBUG'):

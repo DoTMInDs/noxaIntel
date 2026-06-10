@@ -41,3 +41,13 @@ class PushSubscription(models.Model):
 
     def __str__(self):
         return f"Push sub for {self.user.username} ({self.endpoint[:40]}...)"
+
+
+class FcmDevice(models.Model):
+    """Stores Firebase Cloud Messaging registration token for a user device."""
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='fcm_devices')
+    registration_token = models.TextField(unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"FCM token for {self.user.username} ({self.registration_token[:20]}...)"

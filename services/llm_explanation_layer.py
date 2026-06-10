@@ -7,9 +7,46 @@ class LLMExplanationLayer:
     """Simulates a premium, context-aware LLM reasoning and commentary generation layer."""
 
     @staticmethod
-    def explain(query: str, intent: str, context: dict, user) -> str:
+    def explain(query: str, intent: str, context: dict, user, history=None) -> str:
         """Generates analytical Markdown commentary based on the user query, intent, and retrieved context."""
+        history = history or []
         
+        # Try Groq-powered analytical commentary
+        try:
+            from services.groq_client import GroqClient
+            client = GroqClient()
+            if client.is_configured():
+                import json
+                history_str = ""
+                for h_msg in history[-5:]:
+                    role = "User" if h_msg.get('sender') == 'user' else "AI"
+                    history_str += f"{role}: {h_msg.get('text', '')}\n"
+
+                system_prompt = (
+                    "You are the NoxaIntel AI Soccer Betting Assistant, a premium professional sports analyst.\n"
+                    "Your task is to generate a professional, context-aware markdown analysis responding to the user's query.\n\n"
+                    "CRITICAL RULES:\n"
+                    "1. SOURCING PREDICTIONS: You must NEVER fabricate or hallucinate win/draw/away probabilities, predicted scores, over/under, or BTTS likelihoods. You must strictly source them from the provided RAG Context. If the context does not contain this data, explicitly state that predictions are currently unavailable for this fixture.\n"
+                    "2. NO FABRICATION: Do not invent odds, wallet balances, active bets, or injuries. Only refer to what is provided in the RAG Context.\n"
+                    "3. FORMATTING: Use clean, professional, and visually engaging markdown formatting (headers, lists, tables). Use DaisyUI-friendly styling rules where applicable. Keep descriptions concise and analytical.\n"
+                    "4. TONALITY: Address the user in a helpful, expert tone.\n\n"
+                    f"--- CURRENT QUERY ---\n{query}\n\n"
+                    f"--- SEMANTIC INTENT ---\n{intent}\n\n"
+                    f"--- RAG CONTEXT (JSON) ---\n{json.dumps(context, indent=2)}\n\n"
+                    f"--- CHAT HISTORY ---\n{history_str}"
+                )
+                
+                messages = [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": query}
+                ]
+                
+                res = client.generate_chat_completion(messages, temperature=0.3)
+                if res:
+                    return res
+        except Exception as e:
+            logger.warning(f"Groq explanation failed: {e}. Falling back to rule-based explainer.")
+            
         # Base greetings / context alerts
         history_alert = ""
         if context.get("resolved_from_history"):

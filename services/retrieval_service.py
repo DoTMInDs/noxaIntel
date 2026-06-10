@@ -97,7 +97,10 @@ class RetrievalService:
                         "btts_no_prob": float(prediction.btts_no_prob),
                         "confidence_score": prediction.confidence_score,
                         "recommended_pick": prediction.recommended_pick,
-                        "is_vip_only": prediction.is_vip_only
+                        "is_vip_only": prediction.is_vip_only,
+                        "predicted_home_score": prediction.predicted_home_score,
+                        "predicted_away_score": prediction.predicted_away_score,
+                        "predicted_exact_score": prediction.predicted_exact_score
                     }
                 
                 # Fetch AI Analysis details

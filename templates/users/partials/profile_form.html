@@ -1,4 +1,4 @@
-<form hx-post="{% url 'users:profile' %}" hx-swap="outerHTML" hx-target="#profile-form-container" class="space-y-4">
+<form hx-post="{% url 'users:profile' %}" hx-swap="outerHTML" hx-target="#profile-form-container" class="space-y-6">
     {% csrf_token %}
     
     {% if form.non_field_errors %}
@@ -7,37 +7,86 @@
         </div>
     {% endif %}
 
-    {% for field in form %}
-        <div class="form-control w-full">
-            {% if field.field.widget.input_type == 'checkbox' or 'toggle' in field.field.widget.attrs.class %}
-                <label class="label cursor-pointer justify-between bg-base-200 hover:bg-base-300/50 p-3.5 rounded-xl border border-base-300 transition-all duration-150">
-                    <div class="flex flex-col">
-                        <span class="label-text font-bold text-sm text-base-content">{{ field.label }}</span>
-                        {% if field.help_text %}
-                            <span class="label-text-alt opacity-50 mt-0.5">{{ field.help_text }}</span>
+    <!-- General Settings -->
+    <div class="space-y-3">
+        <h4 class="text-xs font-bold uppercase tracking-wider text-base-content/60 px-1">General Settings</h4>
+        <div class="space-y-2">
+            {% for field in form %}
+                {% if field.name == 'email_notifications' or field.name == 'push_notifications' %}
+                    <div class="form-control w-full">
+                        <label class="label cursor-pointer justify-between bg-base-200 hover:bg-base-300/50 p-3.5 rounded-xl border border-base-300 transition-all duration-150">
+                            <div class="flex flex-col">
+                                <span class="label-text font-bold text-sm text-base-content">{{ field.label }}</span>
+                                {% if field.help_text %}
+                                    <span class="label-text-alt opacity-50 mt-0.5">{{ field.help_text }}</span>
+                                {% endif %}
+                            </div>
+                            {{ field }}
+                        </label>
+                        {% if field.errors %}
+                            <label class="label py-0">
+                                <span class="label-text-alt text-error font-medium">{{ field.errors.0 }}</span>
+                            </label>
                         {% endif %}
                     </div>
-                    {{ field }}
-                </label>
-            {% else %}
-                <label class="label py-1">
-                    <span class="label-text font-bold text-sm opacity-75">{{ field.label }}</span>
-                </label>
-                {{ field }}
-                {% if field.help_text %}
-                    <span class="label-text-alt opacity-40 px-1 mt-1">{{ field.help_text }}</span>
                 {% endif %}
-            {% endif %}
-            
-            {% if field.errors %}
-                <label class="label py-0">
-                    <span class="label-text-alt text-error font-medium">{{ field.errors.0 }}</span>
-                </label>
-            {% endif %}
+            {% endfor %}
         </div>
-    {% endfor %}
+    </div>
 
-    <button type="submit" class="btn btn-primary btn-sm w-full font-bold shadow-md shadow-primary/10 mt-2">
+    <!-- Subscriptions & Subscribed Items -->
+    <div class="space-y-3">
+        <h4 class="text-xs font-bold uppercase tracking-wider text-base-content/60 px-1">Tracking Preferences</h4>
+        <div class="space-y-2">
+            {% for field in form %}
+                {% if field.name == 'favorite_leagues' or field.name == 'notify_teams' or field.name == 'notify_leagues' or field.name == 'notify_competitions' %}
+                    <div class="form-control w-full">
+                        <label class="label py-1">
+                            <span class="label-text font-bold text-sm opacity-75">{{ field.label }}</span>
+                        </label>
+                        {{ field }}
+                        {% if field.help_text %}
+                            <span class="label-text-alt opacity-40 px-1 mt-1">{{ field.help_text }}</span>
+                        {% endif %}
+                        {% if field.errors %}
+                            <label class="label py-0">
+                                <span class="label-text-alt text-error font-medium">{{ field.errors.0 }}</span>
+                            </label>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Alert Types -->
+    <div class="space-y-3">
+        <h4 class="text-xs font-bold uppercase tracking-wider text-base-content/60 px-1">Alert Subscriptions</h4>
+        <div class="space-y-2">
+            {% for field in form %}
+                {% if field.name != 'email_notifications' and field.name != 'push_notifications' and field.name != 'favorite_leagues' and field.name != 'notify_teams' and field.name != 'notify_leagues' and field.name != 'notify_competitions' %}
+                    <div class="form-control w-full">
+                        <label class="label cursor-pointer justify-between bg-base-200 hover:bg-base-300/50 p-3.5 rounded-xl border border-base-300 transition-all duration-150">
+                            <div class="flex flex-col">
+                                <span class="label-text font-bold text-sm text-base-content">{{ field.label }}</span>
+                                {% if field.help_text %}
+                                    <span class="label-text-alt opacity-50 mt-0.5">{{ field.help_text }}</span>
+                                {% endif %}
+                            </div>
+                            {{ field }}
+                        </label>
+                        {% if field.errors %}
+                            <label class="label py-0">
+                                <span class="label-text-alt text-error font-medium">{{ field.errors.0 }}</span>
+                            </label>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary btn-sm w-full font-bold shadow-md shadow-primary/10 mt-4">
         Save Preferences
     </button>
 </form>

@@ -1,5 +1,5 @@
 {% with request.resolver_match.view_name as active_route %}
-<div class="btm-nav md:hidden border-t border-base-200 z-50 bg-base-100/95 backdrop-blur-md shadow-2xl py-1 sticky bottom-0">
+<div class="btm-nav md:hidden border-t border-base-200 z-50 bg-base-100/95 backdrop-blur-md shadow-2xl py-1 sticky bottom-0" hx-boost="true">
     <!-- Home / Scheduled -->
     <a href="{% url 'matches:dashboard' %}" class="transition-all duration-200 {% if 'matches' in active_route and request.GET.filter != 'live' and request.GET.filter != 'finished' %}active text-primary font-bold bg-base-200/40{% else %}opacity-60 text-base-content hover:opacity-100{% endif %}">
         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

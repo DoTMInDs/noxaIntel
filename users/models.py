@@ -38,6 +38,15 @@ class Profile(models.Model):
     email_notifications = models.BooleanField(default=True)
     push_notifications = models.BooleanField(default=True)
     favorite_leagues = models.CharField(max_length=255, blank=True, help_text="Comma-separated league codes")
+    
+    notify_teams = models.TextField(blank=True, help_text="Comma-separated team names")
+    notify_leagues = models.TextField(blank=True, help_text="Comma-separated league codes")
+    notify_competitions = models.TextField(blank=True, help_text="Comma-separated competition codes")
+    notify_live_matches = models.BooleanField(default=True)
+    notify_ai_predictions = models.BooleanField(default=True)
+    notify_betting_tips = models.BooleanField(default=True)
+    notify_odds_changes = models.BooleanField(default=True)
+    notify_personal_bets = models.BooleanField(default=True)
 
     def __str__(self):
         return f"{self.user.username} Profile"

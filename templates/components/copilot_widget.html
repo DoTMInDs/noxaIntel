@@ -1,5 +1,5 @@
 <!-- Floating AI Copilot Widget -->
-<div id="copilot-widget" class="relative">
+<div id="copilot-widget" class="relative" hx-preserve="true">
 
     <!-- Floating Action Button (FAB) -->
     <button id="copilot-fab" onclick="toggleCopilotWidget()" 
@@ -361,45 +361,15 @@
 
     // Audio input (Speech recognition)
     const SpeechAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
-    let commandRecognizer = null;
+    let activeCommandRecognizer = null;
     let wakeWordRecognizer = null;
     let isCommandActive = false;
     let isWakeWordActive = false;
 
     if (SpeechAPI) {
-        commandRecognizer = new SpeechAPI();
-        commandRecognizer.continuous = false;
-        commandRecognizer.lang = 'en-US';
-        commandRecognizer.interimResults = false;
-        commandRecognizer.maxAlternatives = 1;
-
-        commandRecognizer.onstart = function() {
-            isCommandActive = true;
-            document.getElementById('copilot-mic-btn').classList.add('bg-red-500', 'scale-95');
-            document.getElementById('copilot-listening-banner').classList.remove('hidden');
-            document.getElementById('copilot-listening-banner').classList.add('flex');
-        };
-
-        commandRecognizer.onresult = function(e) {
-            const transcript = e.results[0][0].transcript;
-            document.getElementById('copilot-input').value = transcript;
-            htmx.trigger(document.getElementById('copilot-form'), 'submit');
-        };
-
-        commandRecognizer.onerror = function() {
-            resetCopilotMicUI();
-        };
-
-        commandRecognizer.onend = function() {
-            resetCopilotMicUI();
-            if (document.getElementById('copilot-wake').checked) {
-                startWakeListener();
-            }
-        };
-
-        // Wake word listener
+        // Wake word listener (continuous background)
         wakeWordRecognizer = new SpeechAPI();
-        wakeWordRecognizer.continuous = false;
+        wakeWordRecognizer.continuous = true;
         wakeWordRecognizer.lang = 'en-US';
         wakeWordRecognizer.interimResults = true;
 
@@ -408,11 +378,11 @@
                 const text = e.results[i][0].transcript.toLowerCase();
                 if (text.includes('hey bet') || text.includes('hay bet') || text.includes('ay bet') || text.includes('hello bet')) {
                     playBeepSound();
-                    wakeWordRecognizer.abort();
+                    stopWakeListener();
                     // Open the widget and start listening
                     toggleCopilotWidgetOpen();
                     setTimeout(() => {
-                        try { commandRecognizer.start(); } catch(_) {}
+                        startVoiceRec();
                     }, 300);
                     break;
                 }
@@ -458,7 +428,9 @@
 
     function stopWakeListener() {
         isWakeWordActive = false;
-        if (wakeWordRecognizer) wakeWordRecognizer.abort();
+        if (wakeWordRecognizer) {
+            try { wakeWordRecognizer.abort(); } catch(_) {}
+        }
     }
 
     window.toggleCopilotWakeWord = function() {
@@ -490,15 +462,69 @@
 
     // Touch events for speech recording (push-to-talk)
     function startVoiceRec() {
-        if (!commandRecognizer || isCommandActive) return;
+        if (!SpeechAPI) return;
+        if (isCommandActive) return;
+        
         stopWakeListener();
-        if (window.speechSynthesis) window.speechSynthesis.cancel();
-        try { commandRecognizer.start(); } catch(_) {}
+        if (window.speechSynthesis) {
+            window.speechSynthesis.cancel();
+        }
+
+        try {
+            activeCommandRecognizer = new SpeechAPI();
+            activeCommandRecognizer.continuous = false;
+            activeCommandRecognizer.lang = 'en-US';
+            activeCommandRecognizer.interimResults = false;
+            activeCommandRecognizer.maxAlternatives = 1;
+
+            activeCommandRecognizer.onstart = function() {
+                isCommandActive = true;
+                const btn = document.getElementById('copilot-mic-btn');
+                if (btn) btn.classList.add('bg-red-500', 'scale-95');
+                const banner = document.getElementById('copilot-listening-banner');
+                if (banner) {
+                    banner.classList.remove('hidden');
+                    banner.classList.add('flex');
+                }
+            };
+
+            activeCommandRecognizer.onresult = function(e) {
+                const transcript = e.results[0][0].transcript;
+                const input = document.getElementById('copilot-input');
+                if (input) {
+                    input.value = transcript;
+                    htmx.trigger(document.getElementById('copilot-form'), 'submit');
+                }
+            };
+
+            activeCommandRecognizer.onerror = function(e) {
+                console.warn('Command Recognizer Error:', e.error);
+                resetCopilotMicUI();
+            };
+
+            activeCommandRecognizer.onend = function() {
+                resetCopilotMicUI();
+                activeCommandRecognizer = null;
+                if (document.getElementById('copilot-wake').checked) {
+                    startWakeListener();
+                }
+            };
+
+            activeCommandRecognizer.start();
+        } catch (err) {
+            console.error('Failed to start SpeechRecognition:', err);
+            resetCopilotMicUI();
+        }
     }
 
+    // Release microphone streams and call .stop() or .abort()
     function stopVoiceRec() {
-        if (commandRecognizer && isCommandActive) {
-            commandRecognizer.stop();
+        if (activeCommandRecognizer && isCommandActive) {
+            try {
+                activeCommandRecognizer.stop();
+            } catch(e) {
+                try { activeCommandRecognizer.abort(); } catch(_) {}
+            }
         }
     }
 

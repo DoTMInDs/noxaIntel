@@ -18,7 +18,7 @@ def assistant_query(request):
             'error': "Please enter a question."
         })
 
-    ai_response = AIChatService.generate_response(user_message, request.user)
+    ai_response = AIChatService.generate_response(user_message, request.user, request)
 
     return render(request, 'ai_engine/partials/chat_message.html', {
         'user_message': user_message,

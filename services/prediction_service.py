@@ -22,85 +22,27 @@ class PredictionService:
     @staticmethod
     def generate_prediction(match):
         """Generates probabilities, selection, and writes an AI tactical review for a match."""
-        # Seed pseudo-random generator with match ID to keep simulation stable
-        random.seed(match.id)
-
-        # Formulate probabilities
-        home_len = len(match.home_team.name)
-        away_len = len(match.away_team.name)
+        from services.prediction_engine import PredictionEngine
+        res = PredictionEngine.predict(match)
         
-        # Simulate dynamic strength difference
-        diff = (home_len - away_len) * 2.5
-        
-        home_win_prob = Decimal(str(round(max(15.0, min(80.0, 45.0 + diff)), 2)))
-        draw_prob = Decimal(str(round(max(10.0, min(40.0, 25.0 - (abs(diff) * 0.2))), 2)))
-        away_win_prob = Decimal('100.00') - home_win_prob - draw_prob
-        
-        over_2_5_prob = Decimal(str(round(random.uniform(40.0, 80.0), 2)))
-        under_2_5_prob = Decimal('100.00') - over_2_5_prob
-        
-        btts_yes_prob = Decimal(str(round(random.uniform(45.0, 78.0), 2)))
-        btts_no_prob = Decimal('100.00') - btts_yes_prob
-        
-        confidence_score = int(random.uniform(60, 96))
-        
-        # Recommended pick selection
-        picks = []
-        if home_win_prob > 50:
-            picks.append(f"{match.home_team.name} Win")
-        elif away_win_prob > 50:
-            picks.append(f"{match.away_team.name} Win")
-        else:
-            picks.append("Double Chance 1X" if home_win_prob > away_win_prob else "Double Chance X2")
-            
-        if over_2_5_prob > 60:
-            picks.append("Over 2.5 Goals")
-        elif under_2_5_prob > 60:
-            picks.append("Under 2.5 Goals")
-            
-        if btts_yes_prob > 65:
-            picks.append("Both Teams to Score - Yes")
-            
-        recommended_pick = picks[0] if picks else f"{match.home_team.name} or Draw"
-        is_vip_only = confidence_score >= 85
-
-        # --- AI Exact Score Prediction ---
-        # Use seeded random to deterministically pick a realistic scoreline
-        # consistent with the match probabilities
-        if home_win_prob > 50:
-            # Home win likely — generate a home-favoured score
-            home_goals = random.choices([1, 2, 3], weights=[25, 50, 25])[0]
-            away_goals = random.choices([0, 1], weights=[60, 40])[0]
-            if away_goals >= home_goals:
-                away_goals = max(0, home_goals - 1)
-        elif away_win_prob > 50:
-            # Away win likely
-            away_goals = random.choices([1, 2, 3], weights=[25, 50, 25])[0]
-            home_goals = random.choices([0, 1], weights=[60, 40])[0]
-            if home_goals >= away_goals:
-                home_goals = max(0, away_goals - 1)
-        else:
-            # Draw likely
-            goals = random.choices([0, 1, 2], weights=[30, 50, 20])[0]
-            home_goals = goals
-            away_goals = goals
+        is_vip_only = res["confidence_score"] >= 85
 
         # Create/Update prediction
         prediction, _ = Prediction.objects.update_or_create(
             match=match,
             defaults={
-                "home_win_prob": home_win_prob,
-                "draw_prob": draw_prob,
-                "away_win_prob": away_win_prob,
-                "over_2_5_prob": over_2_5_prob,
-                "under_2_5_prob": under_2_5_prob,
-                "btts_yes_prob": btts_yes_prob,
-                "btts_no_prob": btts_no_prob,
-                "confidence_score": confidence_score,
-                "recommended_pick": recommended_pick,
+                "home_win_prob": res["home_win_prob"],
+                "draw_prob": res["draw_prob"],
+                "away_win_prob": res["away_win_prob"],
+                "over_2_5_prob": res["over_2_5_prob"],
+                "under_2_5_prob": res["under_2_5_prob"],
+                "btts_yes_prob": res["btts_yes_prob"],
+                "btts_no_prob": res["btts_no_prob"],
+                "confidence_score": res["confidence_score"],
+                "recommended_pick": res["recommended_pick"],
                 "is_vip_only": is_vip_only,
-                "predicted_home_score": home_goals,
-                "predicted_away_score": away_goals,
+                "predicted_home_score": res["predicted_home_score"],
+                "predicted_away_score": res["predicted_away_score"],
             }
         )
 
