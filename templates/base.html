@@ -125,22 +125,55 @@
     </div>
     
     <script>
-        document.addEventListener("DOMContentLoaded", () => {
-            const launchScreen = document.getElementById('launch-screen');
-            if (launchScreen) {
-                // Show only once per browser session to ensure high-performance navigation
-                if (sessionStorage.getItem('launchScreenShown')) {
-                    launchScreen.remove();
-                } else {
-                    sessionStorage.setItem('launchScreenShown', 'true');
-                    setTimeout(() => {
-                        launchScreen.classList.add('opacity-0');
-                        setTimeout(() => {
-                            launchScreen.remove();
-                        }, 500);
-                    }, 1400); // 1.4s display time
-                }
+        // ── Launch Screen Logic ───────────────────────────────────────────────
+        // Runs immediately (synchronous) to hide splash ASAP on HTMX navigations.
+        // hx-boost swaps the body without firing DOMContentLoaded, so we must handle
+        // both the initial load case AND HTMX page-swap case.
+        (function initLaunchScreen() {
+            var launchScreen = document.getElementById('launch-screen');
+            if (!launchScreen) return;
+
+            if (sessionStorage.getItem('launchScreenShown')) {
+                // Already shown this session — remove immediately, no fade
+                launchScreen.remove();
+                return;
             }
+
+            // First visit this session — animate it out after 1.4s
+            sessionStorage.setItem('launchScreenShown', 'true');
+
+            function dismissSplash() {
+                var ls = document.getElementById('launch-screen');
+                if (!ls) return;
+                ls.style.transition = 'opacity 0.5s ease-in-out';
+                ls.classList.add('opacity-0');
+                setTimeout(function() {
+                    var el = document.getElementById('launch-screen');
+                    if (el) el.remove();
+                }, 500);
+            }
+
+            // Wait for DOM ready before starting the timer
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', function() {
+                    setTimeout(dismissSplash, 1400);
+                });
+            } else {
+                setTimeout(dismissSplash, 1400);
+            }
+        })();
+
+        // ── HTMX navigation guard ─────────────────────────────────────────────
+        // After every HTMX page swap (hx-boost navigation), immediately nuke any
+        // stale #launch-screen that got re-injected into the new body content.
+        document.addEventListener('htmx:afterSwap', function() {
+            var ls = document.getElementById('launch-screen');
+            if (ls) ls.remove();
+        });
+        // Also catch htmx:load for partial swaps
+        document.addEventListener('htmx:load', function() {
+            var ls = document.getElementById('launch-screen');
+            if (ls) ls.remove();
         });
     </script>
 

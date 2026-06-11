@@ -85,13 +85,28 @@
 </style>
 
 <div id="push-prompt" role="dialog" aria-label="Enable push notifications" style="display:none">
-  <div class="push-prompt-icon">🔔</div>
+  <div class="push-prompt-icon" id="push-prompt-icon">🔔</div>
   <div class="push-prompt-body">
-    <p>Enable push notifications for real‑time match alerts.</p>
-    <div class="push-prompt-actions">
-      <button id="enable-push">Enable Alerts</button>
-      <span id="push-status"></span>
-      <button id="push-dismiss" aria-label="Dismiss">✕</button>
+    <!-- Default view: ask to enable -->
+    <div id="push-view-default">
+      <p>Enable push notifications for real‑time match alerts.</p>
+      <div class="push-prompt-actions">
+        <button id="enable-push">Enable Alerts</button>
+        <span id="push-status"></span>
+        <button id="push-dismiss" aria-label="Dismiss">✕</button>
+      </div>
+    </div>
+    <!-- Blocked view: show unblock instructions -->
+    <div id="push-view-blocked" style="display:none">
+      <p style="font-weight:700;color:#f87171;margin-bottom:4px;">🚫 Notifications blocked</p>
+      <p style="font-size:11px;line-height:1.5;margin:0 0 8px;">To enable alerts, unblock this site in your browser:</p>
+      <p style="font-size:11px;line-height:1.6;margin:0;color:rgba(255,255,255,0.75);">
+        <strong>Chrome:</strong> Tap the 🔒 lock → <em>Site settings</em> → Notifications → <strong>Allow</strong><br>
+        <strong>Safari/iOS:</strong> Settings → Apps → Safari → Website Settings → find this site → Notifications → <strong>Allow</strong>
+      </p>
+      <div class="push-prompt-actions" style="margin-top:8px;">
+        <button id="push-dismiss-blocked" style="flex:1;padding:7px 14px;border-radius:999px;border:none;background:rgba(255,255,255,0.12);color:#fff;font-size:12px;font-weight:600;cursor:pointer;">Got it</button>
+      </div>
     </div>
   </div>
 </div>
@@ -154,94 +169,129 @@
     prompt.style.transform = '';
   }
 
-  // ── Wait for a live service worker ────────────────────────────────────────
-  // Returns a promise that resolves with a ServiceWorkerRegistration.
-  // Strategy: wait for `navigator.serviceWorker.ready` (guaranteed active SW),
-  // then confirm pushManager is available before resolving.
+  // ── Wait for a live service worker ─────────────────────────────────────────
+  // Uses navigator.serviceWorker.ready as the primary path — it is guaranteed
+  // to resolve once an active service worker is controlling the page.
+  // A 10-second timeout prevents infinite hangs if the SW never activates.
   async function getReadySW() {
     if (!('serviceWorker' in navigator)) {
       throw new Error('Service Worker not supported');
     }
 
-    // 1. Try to find an existing registration first to avoid ready hang
-    let reg = await navigator.serviceWorker.getRegistration('/');
-    if (!reg) {
-      const regs = await navigator.serviceWorker.getRegistrations();
-      if (regs && regs.length > 0) {
-        reg = regs[0];
+    // Ensure a registration exists; register on-the-fly if not
+    let existingReg = null;
+    try {
+      existingReg = await navigator.serviceWorker.getRegistration('/');
+      if (!existingReg) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        existingReg = (regs && regs.length > 0) ? regs[0] : null;
       }
-    }
+    } catch (e) { /* ignore — we'll register below */ }
 
-    // 2. If no registration exists, register it on the fly
-    if (!reg) {
-      console.log('[NoxaIntel Push] No active service worker found. Registering on the fly...');
+    if (!existingReg) {
+      console.log('[NoxaIntel Push] No SW registration found. Registering on the fly...');
       try {
-        reg = await navigator.serviceWorker.register('{% url "pwa:serviceworker" %}', { scope: '/' });
+        await navigator.serviceWorker.register('{% url "pwa:serviceworker" %}', { scope: '/' });
       } catch (err) {
         throw new Error('Service Worker registration failed: ' + err.message);
       }
     }
 
-    if (reg) {
-      if (reg.active) {
-        if (!reg.pushManager) throw new Error('PushManager not available on this SW registration');
-        return reg;
-      }
-      const activeWorker = reg.active || reg.waiting || reg.installing;
-      if (activeWorker) {
-        await new Promise((resolve) => {
-          if (activeWorker.state === 'activated') {
-            resolve();
-          } else {
-            activeWorker.addEventListener('statechange', (e) => {
-              if (e.target.state === 'activated') resolve();
-            });
-          }
-        });
-        if (!reg.pushManager) throw new Error('PushManager not available on this SW registration');
-        return reg;
-      }
+    // navigator.serviceWorker.ready always resolves with the active registration.
+    // Race it against a 10-second timeout to avoid hanging forever.
+    const reg = await Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise((_, reject) =>
+        setTimeout(() => reject(new Error(
+          'Service Worker did not become ready within 10 seconds. ' +
+          'Try refreshing the page and enabling alerts again.'
+        )), 10000)
+      )
+    ]);
+
+    if (!reg || !reg.pushManager) {
+      throw new Error('PushManager is not available. Your browser may not support Web Push.');
     }
-
-    // 2. Fallback to ready with a 6-second timeout so it never hangs indefinitely
-    const readyPromise = navigator.serviceWorker.ready;
-    const timeoutPromise = new Promise((_, reject) =>
-      setTimeout(() => reject(new Error('Service Worker ready timeout')), 6000)
-    );
-
-    reg = await Promise.race([readyPromise, timeoutPromise]);
-    if (!reg.pushManager) throw new Error('PushManager not available on this SW registration');
     return reg;
   }
 
-  // ── Core subscribe flow ───────────────────────────────────────────────────
+  // ── Core subscribe flow ─────────────────────────────────────────────────────
   async function subscribe(silent) {
     if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
-      if (!silent) statusEl.textContent = '❌ Not supported';
+      if (!silent) {
+        statusEl.textContent  = '❌ Not supported';
+        enableBtn.disabled    = false;
+        enableBtn.textContent = 'Enable Alerts';
+      }
       return false;
     }
 
-    try {
-      // 1. Request permission FIRST to keep the user gesture context active.
-      // Awaiting service worker ready beforehand destroys the user gesture activation on Safari/iOS.
+    // Fail fast if VAPID key is missing
+    if (!VAPID_PUBLIC_KEY) {
       if (!silent) {
-        const permission = await Notification.requestPermission();
+        statusEl.textContent  = '❌ Config error';
+        enableBtn.disabled    = false;
+        enableBtn.textContent = 'Enable Alerts';
+        alert('Push notifications are not configured on this server yet.\nThe VAPID public key is missing.');
+      }
+      return false;
+    }
+
+    // Helper to update the button label so user sees live step progress
+    function step(label) {
+      if (!silent) {
+        enableBtn.textContent = label;
+        console.log('[NoxaIntel Push] ' + label);
+      }
+    }
+
+    // Master 20-second timeout — if ANY step hangs, reset the button and report
+    let masterDone = false;
+    const masterTimeout = setTimeout(function() {
+      if (masterDone) return;
+      masterDone = true;
+      console.error('[NoxaIntel Push] TIMEOUT — subscribe() took over 20 seconds. Last step shown on button.');
+      if (!silent) {
+        enableBtn.disabled    = false;
+        enableBtn.textContent = 'Enable Alerts';
+        statusEl.textContent  = '❌ Timed out';
+        alert(
+          'Enabling alerts timed out.\n\n' +
+          'The button label shows which step got stuck.\n\n' +
+          'Common causes:\n' +
+          '• Service Worker not loading (check DevTools → Application → Service Workers)\n' +
+          '• Browser blocked notifications silently\n' +
+          '• On iOS: site must be added to Home Screen first'
+        );
+      }
+    }, 20000);
+
+    try {
+      // STEP 1 — Request notification permission
+      step('1/4: Permission…');
+      let permission;
+      if (!silent) {
+        permission = await Notification.requestPermission();
         if (permission !== 'granted') {
-          statusEl.textContent = '❌ Denied';
-          if (permission === 'denied') hidePrompt(true); // don't ask again
+          clearTimeout(masterTimeout); masterDone = true;
+          statusEl.textContent  = permission === 'denied' ? '❌ Denied' : '❌ Dismissed';
+          enableBtn.disabled    = false;
+          enableBtn.textContent = 'Enable Alerts';
+          if (permission === 'denied') hidePrompt(true);
           return false;
         }
       } else if (Notification.permission !== 'granted') {
-        // Silent mode but permission not yet granted — do nothing
+        clearTimeout(masterTimeout); masterDone = true;
         return false;
       }
 
-      // 2. Now get the ready service worker and subscribe
+      // STEP 2 — Get the active service worker
+      step('2/4: Service Worker…');
       const reg = await getReadySW();
 
-      // Check for an existing subscription first — avoid double-subscribing
+      // STEP 3 — Subscribe to push
+      step('3/4: Subscribing…');
       let subscription = await reg.pushManager.getSubscription();
-
       if (!subscription) {
         subscription = await reg.pushManager.subscribe({
           userVisibleOnly: true,
@@ -249,7 +299,8 @@
         });
       }
 
-      // Save to server
+      // STEP 4 — Save to server
+      step('4/4: Saving…');
       const resp = await fetch(SUBSCRIBE_URL, {
         method: 'POST',
         headers: {
@@ -258,23 +309,31 @@
         },
         body: JSON.stringify(subscription.toJSON()),
       });
+
+      clearTimeout(masterTimeout); masterDone = true;
+
+      if (!resp.ok) {
+        throw new Error('Server returned ' + resp.status + ' — are you logged in?');
+      }
+
       const data = await resp.json();
 
       if (data.status === 'ok') {
         localStorage.setItem(SUBSCRIBED_KEY, '1');
         window.dispatchEvent(new Event('noxa-push-status-changed'));
         if (!silent) {
-          statusEl.textContent   = '✅';
-          enableBtn.textContent  = 'Done!';
+          statusEl.textContent  = '✅';
+          enableBtn.textContent = 'Done!';
           setTimeout(() => hidePrompt(true), 1800);
         }
         return true;
       } else {
         throw new Error(data.message || 'Server error');
       }
+
     } catch (err) {
+      clearTimeout(masterTimeout); masterDone = true;
       console.error('[NoxaIntel Push] subscribe error:', err);
-      // Clean up local storage subscription key on failure, since it's not valid on the server!
       localStorage.removeItem(SUBSCRIBED_KEY);
       window.dispatchEvent(new Event('noxa-push-status-changed'));
 
@@ -282,7 +341,14 @@
         statusEl.textContent  = '❌ Failed';
         enableBtn.disabled    = false;
         enableBtn.textContent = 'Enable Alerts';
-        alert('Push Subscription Failed:\n\nError: ' + err.message + '\n\nPlease screenshot this error.');
+        alert(
+          'Could not enable push alerts.\n\n' +
+          'Error: ' + err.message + '\n\n' +
+          'Steps to try:\n' +
+          '1. Refresh the page and try again\n' +
+          '2. Check notifications are allowed in browser settings\n' +
+          '3. On iOS: add site to Home Screen first'
+        );
       }
       return false;
     }
@@ -290,49 +356,105 @@
 
   // ── Initialisation ────────────────────────────────────────────────────────
   async function init() {
-    // Skip entirely if browser doesn't support push or VAPID key is missing
-    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return;
-    if (!VAPID_PUBLIC_KEY) {
-      console.warn('[NoxaIntel Push] VAPID_PUBLIC_KEY is not set. Push notifications disabled.');
+    // Skip entirely if browser doesn't support the required APIs
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) {
+      console.log('[NoxaIntel Push] Push notifications not supported in this browser.');
       return;
     }
 
-    // If already subscribed this browser — check if still valid
-    if (localStorage.getItem(SUBSCRIBED_KEY)) {
+    if (!VAPID_PUBLIC_KEY) {
+      // VAPID key is missing — can happen if env var is not set on the server.
+      // Log clearly so the developer can diagnose, but DON'T block showing the UI prompt.
+      console.warn('[NoxaIntel Push] VAPID_PUBLIC_KEY is not set. Cannot subscribe, but prompt will still show.');
+      // Fall through — prompt will be shown, but clicking Enable will show an error
+    }
+
+    // If permission is denied — show the blocked view with unblock instructions
+    if (Notification.permission === 'denied') {
+      console.log('[NoxaIntel Push] Notification permission is denied. Showing unblock instructions.');
+      // Only show once per session so it doesn't annoy users who intentionally blocked
+      if (!sessionStorage.getItem('noxa-push-blocked-shown')) {
+        sessionStorage.setItem('noxa-push-blocked-shown', '1');
+        setTimeout(function() {
+          var defaultView  = document.getElementById('push-view-default');
+          var blockedView  = document.getElementById('push-view-blocked');
+          var icon         = document.getElementById('push-prompt-icon');
+          var dismissBlockedBtn = document.getElementById('push-dismiss-blocked');
+          if (!defaultView || !blockedView) return;
+          defaultView.style.display = 'none';
+          blockedView.style.display = 'block';
+          if (icon) icon.textContent = '🚫';
+          showPrompt();
+          // Auto-dismiss after 12s (non-permanent — they may fix it and return)
+          var t = setTimeout(function() { hidePrompt(false); }, 12000);
+          if (dismissBlockedBtn) {
+            dismissBlockedBtn.addEventListener('click', function() {
+              clearTimeout(t);
+              hidePrompt(false); // not permanent — show again next session
+            });
+          }
+        }, 2500);
+      }
+      return;
+    }
+
+    // If the user permanently dismissed the prompt — respect that
+    if (localStorage.getItem(DISMISS_KEY)) {
+      console.log('[NoxaIntel Push] Prompt was permanently dismissed by user.');
+      return;
+    }
+
+    // If already subscribed this browser — silently re-validate in the background
+    if (localStorage.getItem(SUBSCRIBED_KEY) && VAPID_PUBLIC_KEY) {
       const success = await subscribe(true); // refresh silently
       if (success) {
-        return;
+        console.log('[NoxaIntel Push] Silent re-subscribe succeeded.');
+        return; // Already subscribed and valid — no need to show prompt
+      } else {
+        // Silent re-subscribe failed (e.g., subscription expired) — remove stale flag
+        // and fall through to show the prompt again
+        console.log('[NoxaIntel Push] Silent re-subscribe failed. Will show prompt again.');
+        localStorage.removeItem(SUBSCRIBED_KEY);
       }
     }
 
-    // If permission is already granted AND subscribed, silently check validity
-    // (ensures subscription is always up-to-date after token rotation)
-    if (Notification.permission === 'granted' && localStorage.getItem(SUBSCRIBED_KEY)) {
-      await subscribe(true); // fire-and-forget
-      return;          // don't show the prompt since already subscribed
+    // If permission is already granted but not subscribed — try to silently subscribe
+    if (Notification.permission === 'granted' && VAPID_PUBLIC_KEY) {
+      const success = await subscribe(true);
+      if (success) {
+        console.log('[NoxaIntel Push] Auto-subscribed silently since permission was already granted.');
+        return; // Subscribed in background, no prompt needed
+      }
     }
 
-    // If the user permanently dismissed or permission was denied — do nothing
-    if (localStorage.getItem(DISMISS_KEY) || Notification.permission === 'denied') return;
+    // Show the prompt after a short delay (let the page settle after the splash screen)
+    // Use a longer delay to ensure it doesn't fight with the launch screen animation
+    let autoDismissTimer = null;
 
-    // Show the prompt after a short delay (let the page settle)
-    setTimeout(showPrompt, 1500);
+    function attachPromptHandlers() {
+      autoDismissTimer = setTimeout(() => hidePrompt(false), 10000);
 
-    // Auto-dismiss after 10 s (but don't permanently dismiss — just session)
-    let autoDismiss = setTimeout(() => hidePrompt(false), 10000);
+      dismissBtn.addEventListener('click', function onDismiss() {
+        clearTimeout(autoDismissTimer);
+        hidePrompt(true); // permanent dismiss via localStorage
+        dismissBtn.removeEventListener('click', onDismiss);
+      });
 
-    dismissBtn.addEventListener('click', () => {
-      clearTimeout(autoDismiss);
-      hidePrompt(true); // permanent dismiss via localStorage
-    });
+      enableBtn.addEventListener('click', async function onEnable() {
+        clearTimeout(autoDismissTimer);
+        enableBtn.disabled    = true;
+        enableBtn.textContent = 'Requesting…';
+        statusEl.textContent  = '';
+        await subscribe(false);
+        enableBtn.removeEventListener('click', onEnable);
+      });
+    }
 
-    enableBtn.addEventListener('click', async () => {
-      clearTimeout(autoDismiss);
-      enableBtn.disabled    = true;
-      enableBtn.textContent = 'Requesting…';
-      statusEl.textContent  = '';
-      await subscribe(false);
-    });
+    // Delay the prompt so the splash screen finishes first (splash = 1.4s + 0.5s fade)
+    setTimeout(function() {
+      showPrompt();
+      attachPromptHandlers();
+    }, 2200);
   }
 
   // Expose to window so other components can interact with push features
@@ -340,7 +462,15 @@
     showPrompt: showPrompt,
     subscribe: subscribe,
     DISMISS_KEY: DISMISS_KEY,
-    SUBSCRIBED_KEY: SUBSCRIBED_KEY
+    SUBSCRIBED_KEY: SUBSCRIBED_KEY,
+    // Developer helper — call window.noxaPush.resetAndShow() in the browser console
+    // to clear all push-related localStorage flags and re-show the prompt.
+    resetAndShow: function() {
+      localStorage.removeItem(DISMISS_KEY);
+      localStorage.removeItem(SUBSCRIBED_KEY);
+      console.log('[NoxaIntel Push] Reset. Re-initialising...');
+      init();
+    }
   };
 
   // Run after page fully loads so the service worker has time to register
