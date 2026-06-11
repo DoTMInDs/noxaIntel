@@ -305,11 +305,11 @@
       }
     }
 
-    // If permission is already granted, silently re-subscribe in background
+    // If permission is already granted AND subscribed, silently check validity
     // (ensures subscription is always up-to-date after token rotation)
-    if (Notification.permission === 'granted') {
+    if (Notification.permission === 'granted' && localStorage.getItem(SUBSCRIBED_KEY)) {
       await subscribe(true); // fire-and-forget
-      return;          // don't show the prompt
+      return;          // don't show the prompt since already subscribed
     }
 
     // If the user permanently dismissed or permission was denied — do nothing

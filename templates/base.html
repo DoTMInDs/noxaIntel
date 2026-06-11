@@ -203,33 +203,39 @@
 
     <!-- Global Theme Switcher Script -->
     <script>
-        const themeToggleBtn = document.getElementById('theme-toggle');
-        const lightIcon = document.getElementById('theme-toggle-light-icon');
-        const darkIcon = document.getElementById('theme-toggle-dark-icon');
+        if (!window.__noxaintel_theme_script_loaded) {
+            window.__noxaintel_theme_script_loaded = true;
 
-        function updateThemeUI(theme) {
-            if (!lightIcon || !darkIcon) return;
-            if (theme === 'light') {
-                lightIcon.classList.add('hidden');
-                darkIcon.classList.remove('hidden');
-            } else {
-                darkIcon.classList.add('hidden');
-                lightIcon.classList.remove('hidden');
+            var themeToggleBtn = document.getElementById('theme-toggle');
+            var lightIcon = document.getElementById('theme-toggle-light-icon');
+            var darkIcon = document.getElementById('theme-toggle-dark-icon');
+
+            function updateThemeUI(theme) {
+                if (!lightIcon || !darkIcon) return;
+                if (theme === 'light') {
+                    lightIcon.classList.add('hidden');
+                    darkIcon.classList.remove('hidden');
+                } else {
+                    darkIcon.classList.add('hidden');
+                    lightIcon.classList.remove('hidden');
+                }
             }
+
+            window.__noxaintel_updateThemeUI = updateThemeUI;
+            window.__noxaintel_themeToggleBtn = themeToggleBtn;
         }
 
-        // Initialize UI
-        const currentTheme = localStorage.getItem('theme') || 'night';
-        updateThemeUI(currentTheme);
+        var currentTheme = localStorage.getItem('theme') || 'night';
+        window.__noxaintel_updateThemeUI && window.__noxaintel_updateThemeUI(currentTheme);
 
-        if (themeToggleBtn) {
-            themeToggleBtn.addEventListener('click', () => {
-                const activeTheme = document.documentElement.getAttribute('data-theme');
-                const newTheme = activeTheme === 'night' ? 'light' : 'night';
-                
+        if (window.__noxaintel_themeToggleBtn) {
+            window.__noxaintel_themeToggleBtn.addEventListener('click', () => {
+                var activeTheme = document.documentElement.getAttribute('data-theme');
+                var newTheme = activeTheme === 'night' ? 'light' : 'night';
+
                 document.documentElement.setAttribute('data-theme', newTheme);
                 localStorage.setItem('theme', newTheme);
-                updateThemeUI(newTheme);
+                window.__noxaintel_updateThemeUI(newTheme);
             });
         }
     </script>

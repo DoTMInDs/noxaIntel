@@ -93,13 +93,21 @@
 <!-- Betslip Client-side Core Logic -->
 <script>
     // State
-    let betslipSelections = [];
-    let betslipType = 'SINGLE'; // 'SINGLE' | 'ACCUMULATOR'
+    window.betslipSelections = window.betslipSelections || [];
+    window.betslipType = window.betslipType || 'SINGLE'; // 'SINGLE' | 'ACCUMULATOR'
 
     // Load from localStorage on load
-    window.addEventListener('DOMContentLoaded', () => {
-        initBetslip();
-    });
+    function _initializeBetslipOnReady() {
+        if (typeof initBetslip === 'function') {
+            initBetslip();
+        }
+    }
+
+    if (document.readyState === 'loading') {
+        window.addEventListener('DOMContentLoaded', _initializeBetslipOnReady);
+    } else {
+        _initializeBetslipOnReady();
+    }
 
     function initBetslip() {
         try {

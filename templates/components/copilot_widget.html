@@ -75,10 +75,12 @@
                 </div>
 
                 <!-- Async History Loader -->
-                <div hx-get="{% url 'ai_engine:history' %}" 
-                     hx-trigger="load" 
+                <div id="copilot-history-loader"
+                     hx-get="{% url 'ai_engine:history' %}" 
+                     hx-trigger="load delay:500ms" 
                      hx-target="this" 
-                     hx-swap="outerHTML">
+                     hx-swap="outerHTML"
+                     hx-timeout="8000">
                     <div class="flex justify-center p-2"><span class="loading loading-dots loading-xs text-primary"></span></div>
                 </div>
             </div>
@@ -193,7 +195,8 @@
 
 <script>
     // State Persistence
-    const COPILOT_STATE_KEY = 'noxa_copilot_state';
+    var COPILOT_STATE_KEY = window.COPILOT_STATE_KEY || 'noxa_copilot_state';
+    window.COPILOT_STATE_KEY = COPILOT_STATE_KEY;
     
     function saveCopilotState() {
         const panel = document.getElementById('copilot-panel');
@@ -228,7 +231,8 @@
             document.getElementById('copilot-tts').checked = !!state.ttsChecked;
             document.getElementById('copilot-wake').checked = !!state.wakeChecked;
             if (state.wakeChecked) {
-                setTimeout(startWakeListener, 1000);
+                // Defer wake listener start to prevent blocking UI
+                setTimeout(startWakeListener, 2000);
             }
         } catch (e) {
             console.error('Failed to load copilot state:', e);
@@ -359,16 +363,52 @@
         }
     });
 
-    // Audio input (Speech recognition)
-    const SpeechAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
-    let activeCommandRecognizer = null;
-    let wakeWordRecognizer = null;
-    let isCommandActive = false;
-    let isWakeWordActive = false;
+    // History loader timeout fallback - remove loader if it fails or times out
+    document.body.addEventListener('htmx:responseError', function(e) {
+        if (e.detail.elt.id === 'copilot-history-loader') {
+            const loader = document.getElementById('copilot-history-loader');
+            if (loader) {
+                loader.innerHTML = ''; // Clear the loader silently
+            }
+        }
+    });
 
-    if (SpeechAPI) {
-        // Wake word listener (continuous background)
-        wakeWordRecognizer = new SpeechAPI();
+    document.body.addEventListener('htmx:sendError', function(e) {
+        if (e.detail.elt.id === 'copilot-history-loader') {
+            const loader = document.getElementById('copilot-history-loader');
+            if (loader) {
+                loader.innerHTML = ''; // Clear the loader silently
+            }
+        }
+    });
+
+    // Timeout fallback for history loader (8 seconds)
+    setTimeout(function() {
+        const loader = document.getElementById('copilot-history-loader');
+        if (loader && loader.innerHTML.includes('loading-dots')) {
+            console.warn('History loader timeout - clearing...');
+            loader.innerHTML = '';
+        }
+    }, 9000);
+
+    // Audio input (Speech recognition)
+    var SpeechAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+    
+    // Initialize window namespace if needed
+    if (!window.__copilotSpeechInitialized) {
+        window.__copilotSpeechInitialized = true;
+        window.__copilotActiveCommandRecognizer = null;
+        window.__copilotWakeWordRecognizer = null;
+        window.__copilotIsCommandActive = false;
+        window.__copilotIsWakeWordActive = false;
+    }
+
+    if (SpeechAPI && !window.__copilotSpeechSetup) {
+        window.__copilotSpeechSetup = true;
+        
+        // Wake word listener (continuous background) — only set up once
+        window.__copilotWakeWordRecognizer = new SpeechAPI();
+        var wakeWordRecognizer = window.__copilotWakeWordRecognizer;
         wakeWordRecognizer.continuous = true;
         wakeWordRecognizer.lang = 'en-US';
         wakeWordRecognizer.interimResults = true;
@@ -396,13 +436,14 @@
         };
 
         wakeWordRecognizer.onend = function() {
-            if (isWakeWordActive && document.getElementById('copilot-wake').checked && !isCommandActive) {
-                try { wakeWordRecognizer.start(); } catch(_) {}
+            if (window.__copilotIsWakeWordActive && document.getElementById('copilot-wake').checked && !window.__copilotIsCommandActive) {
+                try { window.__copilotWakeWordRecognizer && window.__copilotWakeWordRecognizer.start(); } catch(_) {}
             }
         };
     } else {
-        const mic = document.getElementById('copilot-mic-btn');
-        if (mic) {
+        var mic = document.getElementById('copilot-mic-btn');
+        if (mic && !window.__copilotMicDisabled) {
+            window.__copilotMicDisabled = true;
             mic.disabled = true;
             mic.title = "Voice recognition not supported in this browser";
             mic.classList.add('opacity-50', 'cursor-not-allowed');
@@ -410,10 +451,10 @@
     }
 
     function resetCopilotMicUI() {
-        isCommandActive = false;
-        const btn = document.getElementById('copilot-mic-btn');
+        window.__copilotIsCommandActive = false;
+        var btn = document.getElementById('copilot-mic-btn');
         if (btn) btn.classList.remove('bg-red-500', 'scale-95');
-        const banner = document.getElementById('copilot-listening-banner');
+        var banner = document.getElementById('copilot-listening-banner');
         if (banner) {
             banner.classList.add('hidden');
             banner.classList.remove('flex');
@@ -421,15 +462,15 @@
     }
 
     function startWakeListener() {
-        if (!wakeWordRecognizer) return;
-        isWakeWordActive = true;
-        try { wakeWordRecognizer.start(); } catch(_) {}
+        if (!window.__copilotWakeWordRecognizer) return;
+        window.__copilotIsWakeWordActive = true;
+        try { window.__copilotWakeWordRecognizer.start(); } catch(_) {}
     }
 
     function stopWakeListener() {
-        isWakeWordActive = false;
-        if (wakeWordRecognizer) {
-            try { wakeWordRecognizer.abort(); } catch(_) {}
+        window.__copilotIsWakeWordActive = false;
+        if (window.__copilotWakeWordRecognizer) {
+            try { window.__copilotWakeWordRecognizer.abort(); } catch(_) {}
         }
     }
 
@@ -463,7 +504,7 @@
     // Touch events for speech recording (push-to-talk)
     function startVoiceRec() {
         if (!SpeechAPI) return;
-        if (isCommandActive) return;
+        if (window.__copilotIsCommandActive) return;
         
         stopWakeListener();
         if (window.speechSynthesis) {
@@ -471,17 +512,18 @@
         }
 
         try {
-            activeCommandRecognizer = new SpeechAPI();
+            window.__copilotActiveCommandRecognizer = new SpeechAPI();
+            activeCommandRecognizer = window.__copilotActiveCommandRecognizer;
             activeCommandRecognizer.continuous = false;
             activeCommandRecognizer.lang = 'en-US';
             activeCommandRecognizer.interimResults = false;
             activeCommandRecognizer.maxAlternatives = 1;
 
             activeCommandRecognizer.onstart = function() {
-                isCommandActive = true;
-                const btn = document.getElementById('copilot-mic-btn');
+                window.__copilotIsCommandActive = true;
+                var btn = document.getElementById('copilot-mic-btn');
                 if (btn) btn.classList.add('bg-red-500', 'scale-95');
-                const banner = document.getElementById('copilot-listening-banner');
+                var banner = document.getElementById('copilot-listening-banner');
                 if (banner) {
                     banner.classList.remove('hidden');
                     banner.classList.add('flex');
@@ -489,8 +531,8 @@
             };
 
             activeCommandRecognizer.onresult = function(e) {
-                const transcript = e.results[0][0].transcript;
-                const input = document.getElementById('copilot-input');
+                var transcript = e.results[0][0].transcript;
+                var input = document.getElementById('copilot-input');
                 if (input) {
                     input.value = transcript;
                     htmx.trigger(document.getElementById('copilot-form'), 'submit');
@@ -504,6 +546,7 @@
 
             activeCommandRecognizer.onend = function() {
                 resetCopilotMicUI();
+                window.__copilotActiveCommandRecognizer = null;
                 activeCommandRecognizer = null;
                 if (document.getElementById('copilot-wake').checked) {
                     startWakeListener();
@@ -519,7 +562,8 @@
 
     // Release microphone streams and call .stop() or .abort()
     function stopVoiceRec() {
-        if (activeCommandRecognizer && isCommandActive) {
+        var activeCommandRecognizer = window.__copilotActiveCommandRecognizer;
+        if (activeCommandRecognizer && window.__copilotIsCommandActive) {
             try {
                 activeCommandRecognizer.stop();
             } catch(e) {
@@ -528,8 +572,9 @@
         }
     }
 
-    const micBtn = document.getElementById('copilot-mic-btn');
-    if (micBtn) {
+    var micBtn = document.getElementById('copilot-mic-btn');
+    if (micBtn && !window.__copilotMicBtnListenerAttached) {
+        window.__copilotMicBtnListenerAttached = true;
         micBtn.addEventListener('mousedown', (e) => { e.preventDefault(); startVoiceRec(); });
         micBtn.addEventListener('mouseup', (e) => { e.preventDefault(); stopVoiceRec(); });
         micBtn.addEventListener('mouseleave', () => { stopVoiceRec(); });
@@ -542,4 +587,16 @@
         loadCopilotState();
         scrollCopilotBottom();
     });
+
+    // Allow page to be interactive immediately, don't wait for full load
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            loadCopilotState();
+            scrollCopilotBottom();
+        });
+    } else {
+        // Already loaded
+        loadCopilotState();
+        scrollCopilotBottom();
+    }
 </script>
